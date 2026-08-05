@@ -17,6 +17,12 @@ const PUBLIC_DIR = path.join(__dirname, "..", "..", "public");
 const PRODUCT_IMAGES_DIR = path.join(PUBLIC_DIR, "products");
 fs.mkdirSync(PRODUCT_IMAGES_DIR, { recursive: true });
 
+const PRODUCT_INCLUDE = {
+  category: true,
+  subCategory: true,
+  brand: true,
+};
+
 function toNonNegativeInt(value, fallback = 0) {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed)) return fallback;
@@ -386,6 +392,13 @@ router.post("/add-product", upload.any(), async (req, res) => {
       productData.categoryId = Number(productData.categoryId);
     else productData.categoryId = null;
     if (
+      productData.subCategoryId !== undefined &&
+      productData.subCategoryId !== "null" &&
+      productData.subCategoryId !== ""
+    )
+      productData.subCategoryId = Number(productData.subCategoryId);
+    else productData.subCategoryId = null;
+    if (
       productData.brandId !== undefined &&
       productData.brandId !== "null" &&
       productData.brandId !== ""
@@ -511,7 +524,7 @@ router.post("/add-product", upload.any(), async (req, res) => {
     productData.images = uploadedImages.concat(uploadedVariantImages);
 
     // Clean up productData for Prisma
-    const { categoryId, brandId, id: _id, ...prismaData } = productData;
+    const { categoryId, subCategoryId, brandId, id: _id, ...prismaData } = productData;
 
     // Create product
     const newProduct = await prisma.product.create({
@@ -521,13 +534,14 @@ router.post("/add-product", upload.any(), async (req, res) => {
           categoryId && categoryId > 0
             ? { connect: { id: categoryId } }
             : undefined,
+        subCategory:
+          subCategoryId && subCategoryId > 0
+            ? { connect: { id: subCategoryId } }
+            : undefined,
         brand:
           brandId && brandId > 0 ? { connect: { id: brandId } } : undefined,
       },
-      include: {
-        category: true,
-        brand: true,
-      },
+      include: PRODUCT_INCLUDE,
     });
 
     res.json({ status: "success", data: withStockMeta(newProduct) });
@@ -718,7 +732,7 @@ router.post(
               category: category ? { connect: { id: category.id } } : undefined,
               brand: brand ? { connect: { id: brand.id } } : undefined,
             },
-            include: { category: true, brand: true },
+            include: PRODUCT_INCLUDE,
           });
         } catch (error) {
           removeImagesFromDisk(productImages);
@@ -797,6 +811,13 @@ router.get("/all-products", async (req, res) => {
       });
     }
 
+    const subCategoryId = parseInt(req.query.subCategoryId);
+    if (!isNaN(subCategoryId) && subCategoryId > 0) {
+      where.AND.push({
+        subCategoryId: subCategoryId,
+      });
+    }
+
     // 2.5 Filter by brand
     const brandId = parseInt(req.query.brandId);
     if (!isNaN(brandId) && brandId > 0) {
@@ -840,6 +861,9 @@ router.get("/all-products", async (req, res) => {
       where.AND.push({
         OR: [{ brand: null }, { brand: { status: "active" } }],
       });
+      where.AND.push({
+        OR: [{ subCategory: null }, { subCategory: { status: "active" } }],
+      });
     }
 
     // Clean up empty AND array
@@ -880,8 +904,7 @@ router.get("/all-products", async (req, res) => {
       skip,
       take: limit,
       include: {
-        category: true, // include category info
-        brand: true,
+        ...PRODUCT_INCLUDE,
       },
     });
 
@@ -921,7 +944,7 @@ router.get("/random-products", async (req, res) => {
     if (totalCount <= limit) {
       const products = await prisma.product.findMany({
         where,
-        include: { category: true, brand: true },
+        include: PRODUCT_INCLUDE,
       });
       return res.json({
         status: "success",
@@ -944,7 +967,7 @@ router.get("/random-products", async (req, res) => {
 
     const products = await prisma.product.findMany({
       where: { id: { in: shuffledIds } },
-      include: { category: true, brand: true },
+      include: PRODUCT_INCLUDE,
     });
 
     // Final shuffle to ensure order is random (Prisma might return in ID order)
@@ -1034,6 +1057,17 @@ router.patch(
         productUpdateData.categoryId === ""
       )
         productUpdateData.categoryId = null;
+      if (
+        productUpdateData.subCategoryId !== undefined &&
+        productUpdateData.subCategoryId !== "null" &&
+        productUpdateData.subCategoryId !== ""
+      )
+        productUpdateData.subCategoryId = Number(productUpdateData.subCategoryId);
+      else if (
+        productUpdateData.subCategoryId === "null" ||
+        productUpdateData.subCategoryId === ""
+      )
+        productUpdateData.subCategoryId = null;
       if (
         productUpdateData.brandId !== undefined &&
         productUpdateData.brandId !== "null" &&
@@ -1209,6 +1243,7 @@ router.patch(
       // Clean up update data for Prisma
       const {
         categoryId,
+        subCategoryId,
         brandId,
         addImages: _add,
         removeImages: _rem,
@@ -1226,6 +1261,15 @@ router.patch(
         }
       }
 
+      // Handle subcategory relation
+      if (subCategoryId !== undefined) {
+        if (subCategoryId && subCategoryId > 0) {
+          prismaUpdateData.subCategory = { connect: { id: subCategoryId } };
+        } else {
+          prismaUpdateData.subCategory = { disconnect: true };
+        }
+      }
+
       // Handle brand relation
       if (brandId !== undefined) {
         if (brandId && brandId > 0) {
@@ -1239,7 +1283,7 @@ router.patch(
       const result = await prisma.product.update({
         where: { id: productId },
         data: prismaUpdateData,
-        include: { category: true, brand: true },
+        include: PRODUCT_INCLUDE,
       });
 
       if (imagesToDelete.length > 0) {
@@ -1288,6 +1332,7 @@ router.get("/details/:id", async (req, res) => {
       where: { id: productId },
       include: {
         category: true,
+        subCategory: true,
         brand: true,
         reviews: {
           where: { status: "APPROVED" },
@@ -1437,7 +1482,7 @@ router.post("/by-ids", async (req, res) => {
 
     const products = await prisma.product.findMany({
       where: { id: { in: parsedIds } },
-      include: { category: true, brand: true },
+      include: PRODUCT_INCLUDE,
     });
 
     res.json({ status: "success", data: products.map(withStockMeta) });

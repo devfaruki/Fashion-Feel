@@ -399,7 +399,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                         Shop
                     </Link>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-primary">{product.category?.name ?? ""}</span>
+                    <span className="text-primary">
+                        {[product.category?.name, product.subCategory?.name].filter(Boolean).join(" / ")}
+                    </span>
                 </div>
 
                 <section className="container grid justify-center gap-8 lg:grid-cols-[minmax(0,720px)_minmax(360px,420px)]">

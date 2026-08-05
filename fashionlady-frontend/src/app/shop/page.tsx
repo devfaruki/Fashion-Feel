@@ -30,11 +30,13 @@ function ShopContent() {
   const pathname = usePathname();
 
   const initialCat = searchParams.get("cat") ?? "All";
+  const initialSubCat = searchParams.get("sub") ?? "";
   const initialQuery = searchParams.get("q") ?? "";
   const initialBrand = searchParams.get("brand") ?? "";
 
   const [query, setQuery] = useState(initialQuery);
   const [activeCat, setActiveCat] = useState<string>(initialCat);
+  const [activeSubCat, setActiveSubCat] = useState<string>(initialSubCat);
   const [activeBrand, setActiveBrand] = useState<string>(initialBrand);
   const [sort, setSort] = useState("featured");
   const [price, setPrice] = useState<[number, number]>([0, 15000]);
@@ -45,11 +47,16 @@ function ShopContent() {
   useEffect(() => {
     let changed = false;
     const cat = searchParams.get("cat");
+    const sub = searchParams.get("sub");
     const q = searchParams.get("q");
     const brand = searchParams.get("brand");
 
     if (cat) {
       setActiveCat(cat);
+      changed = true;
+    }
+    if (sub) {
+      setActiveSubCat(sub);
       changed = true;
     }
     if (q) {
@@ -111,6 +118,14 @@ function ShopContent() {
     [categoriesQuery.data, activeCat],
   );
 
+  const selectedSubCategory = useMemo(
+    () =>
+      (categoriesQuery.data ?? [])
+        .flatMap((category) => category.subCategories ?? [])
+        .find((subCategory) => subCategory.name === activeSubCat) ?? null,
+    [categoriesQuery.data, activeSubCat],
+  );
+
   const selectedBrand = useMemo(
     () => brandsQuery.data?.find((b) => b.name === activeBrand) ?? null,
     [brandsQuery.data, activeBrand],
@@ -121,8 +136,10 @@ function ShopContent() {
       "products",
       {
         activeCat,
+        activeSubCat,
         activeBrand,
         categoryId: selectedCategory?.id,
+        subCategoryId: selectedSubCategory?.id,
         brandId: selectedBrand?.id,
         debouncedQuery,
         price,
@@ -130,7 +147,7 @@ function ShopContent() {
       },
     ],
     enabled: 
-      (activeCat === "All" || activeCat === "new" || activeCat === "sale" || !!selectedCategory || categoriesQuery.isSuccess) &&
+      (activeCat === "All" || activeCat === "new" || activeCat === "sale" || !!selectedCategory || !!selectedSubCategory || categoriesQuery.isSuccess) &&
       (activeBrand === "" || !!selectedBrand || brandsQuery.isSuccess),
     queryFn: async ({ pageParam = 1 }) => {
       const paramsPayload: Record<string, string | number | boolean> = {
@@ -143,6 +160,7 @@ function ShopContent() {
 
       if (debouncedQuery.trim()) paramsPayload.search = debouncedQuery.trim();
       if (selectedCategory?.id) paramsPayload.categoryId = selectedCategory.id;
+      if (selectedSubCategory?.id) paramsPayload.subCategoryId = selectedSubCategory.id;
       if (selectedBrand?.id) paramsPayload.brandId = selectedBrand.id;
 
       if (activeCat === "new") paramsPayload.isNew = true;
@@ -200,6 +218,13 @@ function ShopContent() {
 
   const setCat = (c: string) => {
     setActiveCat(c);
+    setActiveSubCat("");
+    setFiltersOpen(false);
+  };
+
+  const setSubCat = (parentName: string, subName: string) => {
+    setActiveCat(parentName);
+    setActiveSubCat(subName);
     setFiltersOpen(false);
   };
 
@@ -216,6 +241,7 @@ function ShopContent() {
   ];
   const tabLabel = (t: string) =>
     t === "new" ? "New Arrivals" : t === "sale" ? "On Sale" : t;
+  const activeTitle = activeSubCat || tabLabel(activeCat);
 
   return (
     <div className="min-h-screen bg-background">
@@ -232,7 +258,7 @@ function ShopContent() {
             <span className="text-primary">Shop</span>
           </nav>
           <h1 className="font-serif text-4xl md:text-5xl text-primary">
-            {activeCat === "All" ? "All Collections" : tabLabel(activeCat)}
+            {activeCat === "All" && !activeSubCat ? "All Collections" : activeTitle}
           </h1>
           <p className="text-muted-foreground mt-2">
             {total} {total === 1 ? "product" : "products"} available
@@ -306,6 +332,25 @@ function ShopContent() {
                                 )?.count ?? 0)}
                       </span>
                     </button>
+                    {c !== "All" && c !== "new" && c !== "sale" && (
+                      <div className="mt-1 space-y-1 pl-4">
+                        {(categoriesQuery.data?.find((cat) => cat.name === c)?.subCategories ?? []).map((subCategory) => (
+                          <button
+                            key={subCategory.id}
+                            onClick={() => setSubCat(c, subCategory.name)}
+                            className={cn(
+                              "flex w-full items-center justify-between py-1 text-left text-xs transition-colors",
+                              activeSubCat === subCategory.name
+                                ? "font-medium text-primary"
+                                : "text-muted-foreground hover:text-primary",
+                            )}
+                          >
+                            <span>{subCategory.name}</span>
+                            <span>{subCategory.count ?? 0}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

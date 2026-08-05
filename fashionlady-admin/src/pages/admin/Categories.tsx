@@ -10,6 +10,8 @@ import { getFileObjects } from "@/lib/file-utils";
 import type { Category } from "@/types/store";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,6 +20,7 @@ type CategoryRow = Category;
 export default function Categories() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [subCategoryDrafts, setSubCategoryDrafts] = useState<Record<number, string>>({});
   const debouncedSearch = useDebounce(search, 400);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -112,8 +115,123 @@ export default function Categories() {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] }),
   });
 
+  const createSubCategoryMutation = useMutation({
+    mutationFn: async (payload: { categoryId: number; name: string; status?: string }) => {
+      const { data } = await api.post("/category/add-subcategory", payload);
+      return data.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-categories"] }),
+  });
+
+  const updateSubCategoryMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: { name?: string; status?: string } }) => {
+      const { data } = await api.patch(`/category/update-subcategory/${id}`, payload);
+      return data.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-categories"] }),
+  });
+
+  const deleteSubCategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await api.delete(`/category/delete-subcategory/${id}`);
+      return data.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-categories"] }),
+  });
+
   return (
     <div className="space-y-6 text-nowrap">
+      <div className="rounded-xl border bg-card p-4 shadow-soft">
+        <div className="mb-4 flex flex-col gap-1">
+          <h2 className="font-display text-2xl">Sub Category Manager</h2>
+          <p className="text-sm text-muted-foreground">
+            Add one or more sub categories under each parent category.
+          </p>
+        </div>
+        {categoriesQuery.isLoading ? (
+          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            Loading categories...
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            Create a category first, then add sub categories here.
+          </div>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {categories.map((category) => (
+              <div key={category.id} className="rounded-lg border bg-muted/20 p-3">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="h-11 w-11 overflow-hidden rounded-lg bg-secondary">
+                    {category.image ? (
+                      <img
+                        src={resolveAssetUrl(category.image)}
+                        alt={category.name}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                  </div>
+                  <div>
+                    <div className="font-medium">{category.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {(category.subCategories ?? []).length} sub categories
+                    </div>
+                  </div>
+                </div>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {(category.subCategories ?? []).length > 0 ? (
+                    (category.subCategories ?? []).map((subCategory) => (
+                      <span
+                        key={subCategory.id}
+                        className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs"
+                      >
+                        {subCategory.name}
+                        <button
+                          type="button"
+                          className="text-red-500"
+                          onClick={() => deleteSubCategoryMutation.mutate(subCategory.id)}
+                        >
+                          x
+                        </button>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No sub categories yet.</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={subCategoryDrafts[category.id] ?? ""}
+                    onChange={(event) =>
+                      setSubCategoryDrafts((current) => ({
+                        ...current,
+                        [category.id]: event.target.value,
+                      }))
+                    }
+                    placeholder={`Add sub category under ${category.name}`}
+                  />
+                  <Button
+                    type="button"
+                    disabled={createSubCategoryMutation.isPending}
+                    onClick={async () => {
+                      const name = (subCategoryDrafts[category.id] ?? "").trim();
+                      if (!name) return;
+                      await createSubCategoryMutation.mutateAsync({
+                        categoryId: category.id,
+                        name,
+                        status: "active",
+                      });
+                      setSubCategoryDrafts((current) => ({ ...current, [category.id]: "" }));
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <CrudTable<CategoryRow>
         entityName="Category"
         initialRows={[]}
@@ -172,7 +290,7 @@ export default function Categories() {
             key: "_count",
             label: "Products",
             align: "right",
-            render: (c) => c._count?.products ?? 0,
+            render: (c) => c.count ?? c._count?.products ?? 0,
           },
           {
             key: "status",
@@ -229,7 +347,75 @@ export default function Categories() {
               <div className="text-xs uppercase text-muted-foreground">
                 Products
               </div>
-              <div>{c._count?.products ?? 0}</div>
+              <div>{c.count ?? c._count?.products ?? 0}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-xs uppercase text-muted-foreground">
+                Sub Categories
+              </div>
+              <div className="space-y-2">
+                {(c.subCategories ?? []).map((subCategory) => (
+                  <div key={subCategory.id} className="flex items-center gap-2 rounded-lg border p-2">
+                    <Input
+                      defaultValue={subCategory.name}
+                      className="h-9"
+                      onBlur={(event) => {
+                        const name = event.target.value.trim();
+                        if (name && name !== subCategory.name) {
+                          updateSubCategoryMutation.mutate({
+                            id: subCategory.id,
+                            payload: { name },
+                          });
+                        }
+                      }}
+                    />
+                    <Switch
+                      checked={subCategory.status === "active"}
+                      onCheckedChange={(checked) =>
+                        updateSubCategoryMutation.mutate({
+                          id: subCategory.id,
+                          payload: { status: checked ? "active" : "inactive" },
+                        })
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={() => deleteSubCategoryMutation.mutate(subCategory.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input
+                    value={subCategoryDrafts[c.id] ?? ""}
+                    onChange={(event) =>
+                      setSubCategoryDrafts((current) => ({
+                        ...current,
+                        [c.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="New sub category name"
+                  />
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      const name = (subCategoryDrafts[c.id] ?? "").trim();
+                      if (!name) return;
+                      await createSubCategoryMutation.mutateAsync({
+                        categoryId: c.id,
+                        name,
+                        status: "active",
+                      });
+                      setSubCategoryDrafts((current) => ({ ...current, [c.id]: "" }));
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}

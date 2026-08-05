@@ -4,6 +4,16 @@ export type Category = {
   image?: string | null;
   status?: string | null;
   count?: number;
+  subCategories?: SubCategory[];
+};
+
+export type SubCategory = {
+  id: number;
+  name: string;
+  image?: string | null;
+  status?: string | null;
+  categoryId: number;
+  count?: number;
 };
 
 export type Brand = {
@@ -22,6 +32,8 @@ export type Product = {
   brand?: Brand | null;
   categoryId?: number | null;
   category?: Category | null;
+  subCategoryId?: number | null;
+  subCategory?: SubCategory | null;
   price: number;
   priceRange?: { min: number; max: number } | null;
   oldPriceRange?: { min: number; max: number } | null;

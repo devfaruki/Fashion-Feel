@@ -11,6 +11,7 @@ import Overview from "./pages/admin/Overview";
 import Orders from "./pages/admin/Orders";
 import Customers from "./pages/admin/Customers";
 import Products from "./pages/admin/Products";
+import Inventory from "./pages/admin/Inventory";
 import Categories from "./pages/admin/Categories";
 import Brands from "./pages/admin/Brands";
 import HeroSections from "./pages/admin/HeroSections";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/orders" element={<ProtectedRoute permission="orders"><Orders /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute permission="customers"><Customers /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute permission="products"><Products /></ProtectedRoute>} />
+              <Route path="/inventory" element={<ProtectedRoute permission="inventory"><Inventory /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute permission="categories"><Categories /></ProtectedRoute>} />
               <Route path="/brands" element={<ProtectedRoute permission="products"><Brands /></ProtectedRoute>} />
               <Route path="/hero-sections" element={<ProtectedRoute permission="homePage"><HeroSections /></ProtectedRoute>} />

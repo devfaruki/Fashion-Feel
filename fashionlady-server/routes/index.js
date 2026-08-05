@@ -14,6 +14,7 @@ const courierRoutes = require("./courier/courierRoutes");
 const reviewRoutes = require("./review/reviewRoutes");
 const siteSettingsRoutes = require("./siteSettings/siteSettingsRoutes");
 const adminAccessRoutes = require("./adminAccess/adminAccessRoutes").router;
+const inventoryRoutes = require("./inventory/inventoryRoutes");
 
 router.use("/login", loginRoutes);
 router.use("/order", orderRoutes);
@@ -28,5 +29,6 @@ router.use("/courier", courierRoutes);
 router.use("/review", reviewRoutes);
 router.use("/site-settings", siteSettingsRoutes);
 router.use("/admin-access", adminAccessRoutes);
+router.use("/inventory", inventoryRoutes);
 
 module.exports = router;

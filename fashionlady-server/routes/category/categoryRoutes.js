@@ -54,6 +54,22 @@ router.get("/all-categories", async (req, res) => {
       take: limit,
       orderBy: { order: "asc" },
       include: {
+        subCategories: {
+          where: req.query.activeOnly === "true" ? { status: "active" } : {},
+          orderBy: { order: "asc" },
+          include: {
+            _count: {
+              select: {
+                products: {
+                  where: req.query.activeOnly === "true" ? {
+                    stock: "available",
+                    OR: [{ brand: null }, { brand: { status: "active" } }],
+                  } : {},
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             products: {
@@ -69,10 +85,18 @@ router.get("/all-categories", async (req, res) => {
 
     const total = await prisma.category.count({ where });
 
-    const payload = categories.map((category) => ({
-      ...category,
-      count: category._count?.products ?? 0,
-    }));
+    const payload = categories.map((category) => {
+      const subCategories = (category.subCategories ?? []).map((subCategory) => ({
+        ...subCategory,
+        count: subCategory._count?.products ?? 0,
+      }));
+      const subCategoryCount = subCategories.reduce((sum, subCategory) => sum + (subCategory.count ?? 0), 0);
+      return {
+        ...category,
+        subCategories,
+        count: (category._count?.products ?? 0) + subCategoryCount,
+      };
+    });
 
     res.json({
       status: "success",
@@ -376,6 +400,128 @@ router.delete("/delete-category/:id", async (req, res) => {
       status: "fail",
       message: "Failed to delete category",
     });
+  }
+});
+
+// POST add subcategory under a category
+router.post("/add-subcategory", async (req, res) => {
+  try {
+    const categoryId = parseInt(req.body.categoryId, 10);
+    const name = String(req.body.name || "").trim();
+    const status = req.body.status || "active";
+
+    if (!categoryId || categoryId < 1) {
+      return res.status(400).json({ status: "fail", message: "Category is required" });
+    }
+    if (!name) {
+      return res.status(400).json({ status: "fail", message: "Subcategory name is required" });
+    }
+
+    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!category) {
+      return res.status(404).json({ status: "fail", message: "Category not found" });
+    }
+
+    const lastSubCategory = await prisma.subCategory.findFirst({
+      where: { categoryId },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    });
+
+    const result = await prisma.subCategory.create({
+      data: {
+        categoryId,
+        name,
+        status,
+        order: (lastSubCategory?.order ?? -1) + 1,
+      },
+      include: { category: true, _count: { select: { products: true } } },
+    });
+
+    res.json({ status: "success", data: { ...result, count: result._count?.products ?? 0 } });
+  } catch (error) {
+    console.error("Error creating subcategory:", error);
+    if (error.code === "P2002") {
+      return res.status(409).json({
+        status: "fail",
+        message: "A subcategory with this name already exists in this category",
+      });
+    }
+    res.status(500).json({ status: "fail", message: "Failed to create subcategory" });
+  }
+});
+
+// PATCH update subcategory
+router.patch("/update-subcategory/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const data = {};
+
+    if (!id || id < 1) {
+      return res.status(400).json({ status: "fail", message: "Invalid subcategory ID" });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "name")) {
+      const name = String(req.body.name || "").trim();
+      if (!name) {
+        return res.status(400).json({ status: "fail", message: "Subcategory name cannot be empty" });
+      }
+      data.name = name;
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "status")) {
+      data.status = req.body.status || "active";
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "categoryId")) {
+      const categoryId = parseInt(req.body.categoryId, 10);
+      if (!categoryId || categoryId < 1) {
+        return res.status(400).json({ status: "fail", message: "Category is required" });
+      }
+      data.categoryId = categoryId;
+    }
+
+    const result = await prisma.subCategory.update({
+      where: { id },
+      data,
+      include: { category: true, _count: { select: { products: true } } },
+    });
+
+    res.json({ status: "success", data: { ...result, count: result._count?.products ?? 0 } });
+  } catch (error) {
+    console.error("Error updating subcategory:", error);
+    if (error.code === "P2025") {
+      return res.status(404).json({ status: "fail", message: "Subcategory not found" });
+    }
+    if (error.code === "P2002") {
+      return res.status(409).json({
+        status: "fail",
+        message: "A subcategory with this name already exists in this category",
+      });
+    }
+    res.status(500).json({ status: "fail", message: "Failed to update subcategory" });
+  }
+});
+
+// DELETE subcategory
+router.delete("/delete-subcategory/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id || id < 1) {
+      return res.status(400).json({ status: "fail", message: "Invalid subcategory ID" });
+    }
+
+    await prisma.product.updateMany({
+      where: { subCategoryId: id },
+      data: { subCategoryId: null },
+    });
+
+    const result = await prisma.subCategory.delete({ where: { id } });
+    res.json({ status: "success", message: "Subcategory deleted successfully", data: result });
+  } catch (error) {
+    console.error("Error deleting subcategory:", error);
+    if (error.code === "P2025") {
+      return res.status(404).json({ status: "fail", message: "Subcategory not found" });
+    }
+    res.status(500).json({ status: "fail", message: "Failed to delete subcategory" });
   }
 });
 

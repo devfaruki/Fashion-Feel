@@ -5,6 +5,18 @@ export type Category = {
   status?: string | null;
   count?: number;
   _count?: { products: number };
+  subCategories?: SubCategory[];
+};
+
+export type SubCategory = {
+  id: number;
+  name: string;
+  image?: string | null;
+  status?: string | null;
+  categoryId: number;
+  category?: Category | null;
+  count?: number;
+  _count?: { products: number };
 };
 
 export type Brand = {
@@ -50,8 +62,10 @@ export type Product = {
   stockReserved?: number | null;
   stockAvailable?: number | null;
   categoryId?: number | null;
+  subCategoryId?: number | null;
   brandId?: number | null;
   category?: Category | null;
+  subCategory?: SubCategory | null;
   brand?: Brand | null;
   stock?: string | null;
 };

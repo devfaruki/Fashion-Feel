@@ -251,6 +251,17 @@ export default function Products() {
     [categoriesQuery.data],
   );
 
+  const subCategoryOptions = useMemo(
+    () =>
+      (categoriesQuery.data ?? []).flatMap((category) =>
+        (category.subCategories ?? []).map((subCategory) => ({
+          label: `${category.name} / ${subCategory.name}`,
+          value: subCategory.id,
+        })),
+      ),
+    [categoriesQuery.data],
+  );
+
   const brandOptions = useMemo(
     () => (brandsQuery.data ?? []).map((b) => ({ label: b.name, value: b.id })),
     [brandsQuery.data],
@@ -328,6 +339,12 @@ export default function Products() {
             options: categoryOptions,
           },
           {
+            key: "subCategoryId",
+            label: "Sub Category",
+            type: "select",
+            options: subCategoryOptions,
+          },
+          {
             key: "brandId",
             label: "Brand",
             type: "select",
@@ -388,7 +405,7 @@ export default function Products() {
                 <div className="leading-tight">
                   <div className="font-medium">{p.name}</div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    {p.category?.name ?? ""}
+                    {[p.category?.name, p.subCategory?.name].filter(Boolean).join(" / ")}
                     <span className="text-[10px] opacity-30">•</span>
                     <span className={cn(
                       "text-[9px] font-bold uppercase tracking-wider",
@@ -493,7 +510,7 @@ export default function Products() {
                 <div className="text-xs uppercase text-muted-foreground">
                   Category
                 </div>
-                <div>{p.category?.name ?? ""}</div>
+                <div>{[p.category?.name, p.subCategory?.name].filter(Boolean).join(" / ")}</div>
               </div>
               <div>
                 <div className="text-xs uppercase text-muted-foreground">
@@ -595,6 +612,10 @@ export default function Products() {
             data.categoryId ? String(Number(data.categoryId)) : "null",
           );
           formData.append(
+            "subCategoryId",
+            data.subCategoryId ? String(Number(data.subCategoryId)) : "null",
+          );
+          formData.append(
             "brandId",
             data.brandId ? String(Number(data.brandId)) : "null",
           );
@@ -670,6 +691,9 @@ export default function Products() {
               categoryId: hasValue("categoryId") && data.categoryId
                 ? Number(data.categoryId)
                 : (row.categoryId ?? null),
+              subCategoryId: hasValue("subCategoryId") && data.subCategoryId
+                ? Number(data.subCategoryId)
+                : (row.subCategoryId ?? null),
               brandId: hasValue("brandId") && data.brandId
                 ? Number(data.brandId)
                 : (row.brandId ?? null),
@@ -746,6 +770,14 @@ export default function Products() {
               ? String(Number(data.categoryId))
               : row.categoryId
                 ? String(row.categoryId)
+                : "null",
+          );
+          formData.append(
+            "subCategoryId",
+            data.subCategoryId
+              ? String(Number(data.subCategoryId))
+              : row.subCategoryId
+                ? String(row.subCategoryId)
                 : "null",
           );
           formData.append(
