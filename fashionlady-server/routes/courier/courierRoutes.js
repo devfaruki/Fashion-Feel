@@ -33,6 +33,38 @@ router.get("/check-fraud", async (req, res) => {
   }
 });
 
+// GET /api/courier/status/:consignmentId
+router.get("/status/:consignmentId", async (req, res) => {
+  try {
+    const { consignmentId } = req.params;
+    if (!consignmentId) {
+      return res.status(400).json({ status: "error", message: "Consignment ID is required" });
+    }
+
+    const response = await fetch(`${process.env.COURIER_BASE_URL}/status_by_cid/${consignmentId}`, {
+      method: "GET",
+      headers: {
+        "Api-Key": process.env.COURIER_API_KEY,
+        "Secret-Key": process.env.COURIER_SECRET_KEY,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const text = await response.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      result = { status: response.status === 200 ? "success" : "error", message: text };
+    }
+
+    res.status(response.status).json(result);
+  } catch (error) {
+    console.error("Error fetching courier status:", error);
+    res.status(500).json({ status: "error", message: "Internal server error" });
+  }
+});
+
 // POST /api/courier/create-order
 router.post("/create-order", async (req, res) => {
   try {

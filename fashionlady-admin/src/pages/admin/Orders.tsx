@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Pencil, Trash2, Printer, Search, RefreshCw, Package, ShieldAlert, Truck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +74,21 @@ type CourierData = {
 type FraudCheckResponse = {
   status: string;
   data: { [key: string]: CourierData };
+};
+
+type FraudSummary = {
+  successRatio: number | null;
+  totalParcels: number;
+  successParcels: number;
+  cancelledParcels: number;
+};
+
+type CourierStatusResponse = {
+  status?: string | number;
+  delivery_status?: string;
+  data?: {
+    delivery_status?: string;
+  };
 };
 
 interface CourierDetails {
@@ -152,6 +167,49 @@ export default function Orders() {
   });
 
   const orders = ordersQuery.data?.pages.flatMap((p) => p.orders) ?? [];
+  const fraudPhones = Array.from(new Set(orders.map((order) => order.customer?.phone).filter(Boolean)));
+  const courierIds = Array.from(
+    new Set(
+      orders
+        .map((order) => order.courierDetails?.consignment_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+
+  const fraudChecks = useQueries({
+    queries: fraudPhones.map((phone) => ({
+      queryKey: ["fraudCheckRow", phone],
+      queryFn: async () => {
+        const response = await api.get(`/courier/check-fraud?phone=${phone}`);
+        return response.data as FraudCheckResponse;
+      },
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 10,
+      enabled: Boolean(phone),
+    })),
+  });
+
+  const courierStatuses = useQueries({
+    queries: courierIds.map((id) => ({
+      queryKey: ["courier-status", id],
+      queryFn: async () => {
+        const response = await api.get(`/courier/status/${id}`);
+        return response.data as CourierStatusResponse;
+      },
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60,
+      enabled: Boolean(id),
+    })),
+  });
+
+  const fraudByPhone = new Map(
+    fraudPhones.map((phone, index) => [phone, fraudChecks[index]]),
+  );
+  const courierStatusById = new Map(
+    courierIds.map((id, index) => [id, courierStatuses[index]]),
+  );
 
   const {
     data: fraudCheckData,
@@ -227,7 +285,10 @@ export default function Orders() {
 
       if (response.status === 200) {
         await api.patch(`/order/update-order/${order.id}`, { courierDetails: orderUpdateData });
-        await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["admin-orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["courier-status"] }),
+        ]);
         toast({
           title: "Success",
           description: response.data?.message || "Order added to courier successfully.",
@@ -270,6 +331,103 @@ export default function Orders() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const summarizeFraud = (data?: FraudCheckResponse): FraudSummary => {
+    const couriers = Object.values(data?.data || {});
+    if (data?.status !== "success" || couriers.length === 0) {
+      return { successRatio: null, totalParcels: 0, successParcels: 0, cancelledParcels: 0 };
+    }
+
+    const totals = couriers.reduce(
+      (acc, courier) => {
+        acc.totalParcels += Number(courier.total_parcel) || 0;
+        acc.successParcels += Number(courier.success_parcel) || 0;
+        acc.cancelledParcels += Number(courier.cancelled_parcel) || 0;
+        return acc;
+      },
+      { totalParcels: 0, successParcels: 0, cancelledParcels: 0 },
+    );
+
+    if (totals.totalParcels > 0) {
+      return {
+        ...totals,
+        successRatio: (totals.successParcels / totals.totalParcels) * 100,
+      };
+    }
+
+    const ratios = couriers
+      .map((courier) => Number(courier.success_ratio))
+      .filter((ratio) => Number.isFinite(ratio));
+
+    return {
+      ...totals,
+      successRatio: ratios.length ? ratios.reduce((sum, ratio) => sum + ratio, 0) / ratios.length : null,
+    };
+  };
+
+  const fraudRiskLabel = (ratio: number | null) => {
+    if (ratio === null) return "No Entry";
+    if (ratio < 50) return "High Risk";
+    if (ratio < 75) return "Medium Risk";
+    return "Low Risk";
+  };
+
+  const fraudBadgeClass = (ratio: number | null) => {
+    if (ratio === null) return "bg-muted text-muted-foreground border-border";
+    if (ratio < 50) return "bg-red-100 text-red-700 border-red-200";
+    if (ratio < 75) return "bg-amber-100 text-amber-700 border-amber-200";
+    return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  };
+
+  const normalizeCourierStatus = (data?: CourierStatusResponse) =>
+    String(data?.delivery_status || data?.data?.delivery_status || "").trim().toLowerCase();
+
+  const courierStatusLabel = (status: string) => {
+    switch (status) {
+      case "in_review":
+        return "In Review";
+      case "pending":
+        return "Pending";
+      case "delivered":
+      case "delivered_approval_pending":
+        return "Delivered";
+      case "partial_delivered":
+      case "partial_delivered_approval_pending":
+        return "Partial Delivered";
+      case "cancelled":
+      case "cancelled_approval_pending":
+        return "Cancelled";
+      case "hold":
+        return "On Hold";
+      case "unknown":
+      case "unknown_approval_pending":
+        return "Deleted";
+      default:
+        return "No Entry";
+    }
+  };
+
+  const courierStatusClass = (status: string) => {
+    switch (status) {
+      case "delivered":
+      case "partial_delivered":
+      case "delivered_approval_pending":
+      case "partial_delivered_approval_pending":
+        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "cancelled":
+      case "unknown":
+      case "cancelled_approval_pending":
+      case "unknown_approval_pending":
+        return "bg-red-100 text-red-700 border-red-200";
+      case "pending":
+      case "in_review":
+        return "bg-amber-100 text-amber-700 border-amber-200";
+      case "hold":
+        return "bg-sky-100 text-sky-700 border-sky-200";
+      default:
+        return "bg-muted text-muted-foreground border-border";
+    }
   };
 
   async function handleStatusUpdate(orderId: number, newStatus: ServerOrderStatus) {
@@ -381,14 +539,16 @@ export default function Orders() {
 
       <Card className="overflow-hidden shadow-soft text-nowrap">
         <div className="overflow-x-auto">
-          <Table className="min-w-[780px]">
+          <Table className="min-w-[1060px]">
             <TableHeader>
               <TableRow className="bg-secondary/40">
                 <TableHead className="w-12 text-center">#</TableHead>
                 <TableHead>Order</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Success Rate</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Courier Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -401,13 +561,23 @@ export default function Orders() {
                     <TableCell><Skeleton className="h-4 w-6 mx-auto" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-28 ml-auto" /></TableCell>
                   </TableRow>
                 ))}
-              {orders.map((o, idx) => (
+              {orders.map((o, idx) => {
+                const fraudQuery = fraudByPhone.get(o.customer?.phone || "");
+                const fraudSummary = summarizeFraud(fraudQuery?.data);
+                const courierQuery = o.courierDetails?.consignment_id
+                  ? courierStatusById.get(String(o.courierDetails.consignment_id))
+                  : null;
+                const courierStatus = normalizeCourierStatus(courierQuery?.data);
+
+                return (
                 <TableRow key={o.id} className="hover:bg-secondary/30">
                   <TableCell className="text-center text-muted-foreground text-sm">
                     {idx + 1}
@@ -426,6 +596,36 @@ export default function Orders() {
                       </div>
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <button
+                      type="button"
+                      onClick={() => setFraudOrder(o)}
+                      className="text-left"
+                      title="Open fraud check details"
+                    >
+                      {fraudQuery?.isLoading ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Checking
+                        </span>
+                      ) : fraudQuery?.isError ? (
+                        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                          Error
+                        </Badge>
+                      ) : (
+                        <div className="leading-tight">
+                          <Badge variant="outline" className={fraudBadgeClass(fraudSummary.successRatio)}>
+                            {fraudSummary.successRatio === null
+                              ? "No Entry"
+                              : `${fraudSummary.successRatio.toFixed(1)}%`}
+                          </Badge>
+                          <div className="mt-1 text-[11px] text-muted-foreground">
+                            {fraudRiskLabel(fraudSummary.successRatio)}
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(o.orderDate)}
                   </TableCell>
@@ -436,6 +636,31 @@ export default function Orders() {
                     >
                       {o.orderStatus}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {o.courierDetails?.consignment_id ? (
+                      courierQuery?.isLoading ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Loading
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setCourierInfoOrder(o)}
+                          className="text-left"
+                          title="Open courier details"
+                        >
+                          <Badge variant="outline" className={courierStatusClass(courierStatus)}>
+                            {courierQuery?.isError ? "Status Error" : courierStatusLabel(courierStatus)}
+                          </Badge>
+                        </button>
+                      )
+                    ) : (
+                      <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+                        No Entry
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatBDT(o.totalPrice)}
@@ -510,11 +735,12 @@ export default function Orders() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               {!ordersQuery.isLoading && orders.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={9}
                     className="py-12 text-center text-muted-foreground"
                   >
                     No orders found.
@@ -905,6 +1131,24 @@ export default function Orders() {
           </DialogHeader>
           {courierInfoOrder && (
             <div className="w-full">
+              {(() => {
+                const courierStatusQuery = courierInfoOrder.courierDetails?.consignment_id
+                  ? courierStatusById.get(String(courierInfoOrder.courierDetails.consignment_id))
+                  : null;
+                const liveStatus = normalizeCourierStatus(courierStatusQuery?.data);
+
+                return (
+                  <div className="mb-3">
+                    <Badge variant="outline" className={courierStatusClass(liveStatus)}>
+                      {courierStatusQuery?.isLoading
+                        ? "Loading status"
+                        : courierStatusQuery?.isError
+                          ? "Status Error"
+                          : courierStatusLabel(liveStatus)}
+                    </Badge>
+                  </div>
+                );
+              })()}
               <div className="bg-muted rounded-xl p-4 relative space-y-2">
                 <p className="flex gap-2">
                   <span className="font-semibold">Courier Name:</span>{" "}
