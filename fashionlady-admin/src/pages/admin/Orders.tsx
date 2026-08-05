@@ -356,9 +356,9 @@ export default function Orders() {
   const itemsTotal = (o: Order) =>
     Array.isArray(o.items)
       ? o.items.reduce(
-          (sum, i) => sum + (i.price ?? 0) * (i.quantity ?? i.qty ?? 1),
-          0,
-        )
+        (sum, i) => sum + (i.price ?? 0) * (i.quantity ?? i.qty ?? 1),
+        0,
+      )
       : 0;
 
   const formatDate = (d: string) => {
@@ -454,8 +454,8 @@ export default function Orders() {
       default:
         return normalized
           ? normalized
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (match) => match.toUpperCase())
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (match) => match.toUpperCase())
           : "No Entry";
     }
   };
@@ -523,16 +523,16 @@ export default function Orders() {
     const computedTotal = o.totalPrice || computedItemsTotal + computedDelivery;
     const rows = Array.isArray(o.items)
       ? o.items
-          .map(
-            (i) =>
-              `<tr>
+        .map(
+          (i) =>
+            `<tr>
               <td>${i.name || i.product || "—"}${i.size ? ` <span class="muted">(${i.size})</span>` : ""}</td>
               <td>${i.quantity ?? i.qty ?? 1}</td>
               <td class="right">${formatBDT(i.price ?? 0)}</td>
               <td class="right">${formatBDT((i.price ?? 0) * (i.quantity ?? i.qty ?? 1))}</td>
             </tr>`,
-          )
-          .join("")
+        )
+        .join("")
       : "";
 
     win.document.write(`
@@ -631,171 +631,171 @@ export default function Orders() {
                 const courierStatus = normalizeCourierStatus(courierQuery?.data);
 
                 return (
-                <TableRow key={o.id} className="hover:bg-secondary/30">
-                  <TableCell className="text-center text-muted-foreground text-sm">
-                    {idx + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {orderNumber(o)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="leading-tight">
-                      <div>{o.customer?.name || "—"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {o.customer?.phone || ""}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[220px]">
-                        {[o.customer?.thana, o.customer?.district].filter(Boolean).join(" · ") || ""}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      type="button"
-                      onClick={() => setFraudOrder(o)}
-                      className="text-left"
-                      title="Open fraud check details"
-                    >
-                      {fraudQuery?.isLoading ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          Checking
-                        </span>
-                      ) : fraudQuery?.isError ? (
-                        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
-                          Error
-                        </Badge>
-                      ) : (
-                        <div className="leading-tight">
-                          <Badge variant="outline" className={fraudBadgeClass(fraudSummary.successRatio)}>
-                            {fraudSummary.successRatio === null
-                              ? "No Entry"
-                              : `${fraudSummary.successRatio.toFixed(1)}%`}
-                          </Badge>
-                          <div className="mt-1 text-[11px] text-muted-foreground">
-                            {fraudRiskLabel(fraudSummary.successRatio)}
-                          </div>
+                  <TableRow key={o.id} className="hover:bg-secondary/30">
+                    <TableCell className="text-center text-muted-foreground text-sm">
+                      {idx + 1}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {orderNumber(o)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="leading-tight">
+                        <div>{o.customer?.name || "—"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {o.customer?.phone || ""}
                         </div>
-                      )}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(o.orderDate)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={statusStyles[o.orderStatus] || ""}
-                    >
-                      {o.orderStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {courierLookup ? (
-                      courierQuery?.isLoading ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          Loading
-                        </span>
-                      ) : (
-                        <Badge variant="outline" className={courierStatusClass(courierStatus)}>
-                          {courierQuery?.isError ? "Status Error" : courierStatusLabel(courierStatus)}
-                        </Badge>
-                      )
-                    ) : (
-                      <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
-                        No Entry
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatBDT(o.totalPrice)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setViewing(o)}
-                        title="View"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handlePrint(o)}
-                        title="Invoice"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setEditing(o)}
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
+                        <div className="text-xs text-muted-foreground truncate max-w-[220px]">
+                          {[o.customer?.thana, o.customer?.district].filter(Boolean).join(" · ") || ""}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
                         onClick={() => setFraudOrder(o)}
-                        title="Fraud Check"
+                        className="text-left"
+                        title="Open fraud check details"
                       >
-                        <ShieldAlert className="h-4 w-4 text-orange-500" />
-                      </Button>
-                      {o.courierDetails ? (
-                        <>
+                        {fraudQuery?.isLoading ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Checking
+                          </span>
+                        ) : fraudQuery?.isError ? (
+                          <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                            Error
+                          </Badge>
+                        ) : (
+                          <div className="leading-tight">
+                            <Badge variant="outline" className={fraudBadgeClass(fraudSummary.successRatio)}>
+                              {fraudSummary.successRatio === null
+                                ? "No Entry"
+                                : `${fraudSummary.successRatio.toFixed(1)}%`}
+                            </Badge>
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              {fraudRiskLabel(fraudSummary.successRatio)}
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(o.orderDate)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={statusStyles[o.orderStatus] || ""}
+                      >
+                        {o.orderStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {courierLookup ? (
+                        courierQuery?.isLoading ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Loading
+                          </span>
+                        ) : (
+                          <Badge variant="outline" className={courierStatusClass(courierStatus)}>
+                            {courierQuery?.isError ? "Status Error" : courierStatusLabel(courierStatus)}
+                          </Badge>
+                        )
+                      ) : (
+                        <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+                          No Entry
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatBDT(o.totalPrice)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setViewing(o)}
+                          title="View"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handlePrint(o)}
+                          title="Invoice"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setEditing(o)}
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setFraudOrder(o)}
+                          title="Fraud Check"
+                        >
+                          <ShieldAlert className="h-4 w-4 text-orange-500" />
+                        </Button>
+                        {o.courierDetails ? (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setCourierInfoOrder(o)}
+                              title="Courier Info"
+                            >
+                              <Package className="h-4 w-4 text-blue-500" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleAddToCourier(o, true)}
+                              disabled={addingCourierId === o.id}
+                              title="Re-send to Courier"
+                            >
+                              {addingCourierId === o.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-green-500" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 text-slate-500" />
+                              )}
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => setCourierInfoOrder(o)}
-                            title="Courier Info"
-                          >
-                            <Package className="h-4 w-4 text-blue-500" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleAddToCourier(o, true)}
+                            onClick={() => handleAddToCourier(o)}
                             disabled={addingCourierId === o.id}
-                            title="Re-send to Courier"
+                            title="Send to Courier"
                           >
                             {addingCourierId === o.id ? (
                               <Loader2 className="h-4 w-4 animate-spin text-green-500" />
                             ) : (
-                              <RefreshCw className="h-4 w-4 text-slate-500" />
+                              <Truck className="h-4 w-4 text-green-500" />
                             )}
                           </Button>
-                        </>
-                      ) : (
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => handleAddToCourier(o)}
-                          disabled={addingCourierId === o.id}
-                          title="Send to Courier"
+                          onClick={() => setDeleting(o)}
+                          title="Delete"
+                          className="text-destructive hover:text-destructive"
                         >
-                          {addingCourierId === o.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-green-500" />
-                          ) : (
-                            <Truck className="h-4 w-4 text-green-500" />
-                          )}
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setDeleting(o)}
-                        title="Delete"
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
               {!ordersQuery.isLoading && orders.length === 0 && (
@@ -1193,8 +1193,9 @@ export default function Orders() {
           {courierInfoOrder && (
             <div className="w-full">
               {(() => {
-                const courierStatusQuery = courierInfoOrder.courierDetails?.consignment_id
-                  ? courierStatusById.get(String(courierInfoOrder.courierDetails.consignment_id))
+                const courierLookup = getCourierLookup(courierInfoOrder);
+                const courierStatusQuery = courierLookup
+                  ? courierStatusByKey.get(courierLookup.key)
                   : null;
                 const liveStatus = normalizeCourierStatus(courierStatusQuery?.data);
 
@@ -1281,9 +1282,8 @@ export default function Orders() {
                   return (
                     <div
                       key={key}
-                      className={`border rounded-xl p-3 flex items-center gap-3 ${
-                        isRisky ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900" : "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
-                      }`}
+                      className={`border rounded-xl p-3 flex items-center gap-3 ${isRisky ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900" : "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
+                        }`}
                     >
                       {courier.logo && (
                         <img
@@ -1301,9 +1301,8 @@ export default function Orders() {
                         </div>
                       </div>
                       <div
-                        className={`text-center px-2 py-1 rounded-lg ${
-                          isRisky ? "bg-red-500 text-white" : "bg-green-500 text-white"
-                        }`}
+                        className={`text-center px-2 py-1 rounded-lg ${isRisky ? "bg-red-500 text-white" : "bg-green-500 text-white"
+                          }`}
                       >
                         <p className="text-[10px] uppercase tracking-wider">Success</p>
                         <p className="font-bold">{successRatio.toFixed(1)}%</p>

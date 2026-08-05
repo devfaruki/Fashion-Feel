@@ -25,7 +25,7 @@ router.get("/check-fraud", async (req, res) => {
     } catch (e) {
       data = { status: "error", message: text };
     }
-    
+
     res.json(data);
   } catch (error) {
     console.error("Error checking fraud:", error);
@@ -116,7 +116,7 @@ router.get("/status/:type/:key", async (req, res) => {
 router.post("/create-order", async (req, res) => {
   try {
     const data = req.body;
-    
+
     const response = await fetch(`${process.env.COURIER_BASE_URL}/create_order`, {
       method: "POST",
       headers: {
@@ -135,7 +135,7 @@ router.post("/create-order", async (req, res) => {
       // If the response is not valid JSON, return it as a message
       result = { status: response.status === 200 ? "success" : "error", message: text };
     }
-    
+
     res.status(response.status).json(result);
   } catch (error) {
     console.error("Error creating courier order:", error);
