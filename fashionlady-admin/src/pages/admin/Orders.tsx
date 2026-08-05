@@ -133,6 +133,27 @@ interface Order {
   courierDetails?: CourierDetails;
 }
 
+type CourierLookupType = "cid" | "invoice" | "trackingcode";
+
+interface CourierLookup {
+  key: string;
+  type: CourierLookupType;
+}
+
+const getCourierLookup = (order: Order): CourierLookup | null => {
+  if (!order.courierDetails) return null;
+  if (order.courierDetails.consignment_id) {
+    return { key: String(order.courierDetails.consignment_id), type: "cid" };
+  }
+  if (order.courierDetails.invoice) {
+    return { key: String(order.courierDetails.invoice), type: "invoice" };
+  }
+  if (order.courierDetails.tracking_code) {
+    return { key: String(order.courierDetails.tracking_code), type: "trackingcode" };
+  }
+  return null;
+};
+
 export default function Orders() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
@@ -168,12 +189,15 @@ export default function Orders() {
 
   const orders = ordersQuery.data?.pages.flatMap((p) => p.orders) ?? [];
   const fraudPhones = Array.from(new Set(orders.map((order) => order.customer?.phone).filter(Boolean)));
-  const courierIds = Array.from(
-    new Set(
+  const courierLookups = Array.from(
+    new Map(
       orders
-        .map((order) => order.courierDetails?.consignment_id)
-        .filter((id): id is string => Boolean(id)),
-    ),
+        .map((order) => {
+          const lookup = getCourierLookup(order);
+          return lookup ? [lookup.key, lookup] : null;
+        })
+        .filter((item): item is [string, CourierLookup] => Boolean(item)),
+    ).values(),
   );
 
   const fraudChecks = useQueries({
@@ -190,25 +214,38 @@ export default function Orders() {
     })),
   });
 
+  const getCourierStatusPath = (lookup: CourierLookup) => {
+    return `/courier/status/${lookup.type}/${encodeURIComponent(lookup.key)}`;
+  };
+
   const courierStatuses = useQueries({
-    queries: courierIds.map((id) => ({
-      queryKey: ["courier-status", id],
+    queries: courierLookups.map((lookup) => ({
+      queryKey: ["courier-status", lookup.type, lookup.key],
       queryFn: async () => {
-        const response = await api.get(`/courier/status/${id}`);
-        return response.data as CourierStatusResponse;
+        const path = getCourierStatusPath(lookup);
+        try {
+          const response = await api.get(path);
+          return response.data as CourierStatusResponse;
+        } catch (error: any) {
+          if (lookup.type === "cid" && error?.response?.status === 404) {
+            const fallbackResponse = await api.get(`/courier/status/${encodeURIComponent(lookup.key)}`);
+            return fallbackResponse.data as CourierStatusResponse;
+          }
+          throw error;
+        }
       },
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60,
-      enabled: Boolean(id),
+      enabled: Boolean(lookup.key),
     })),
   });
 
   const fraudByPhone = new Map(
     fraudPhones.map((phone, index) => [phone, fraudChecks[index]]),
   );
-  const courierStatusById = new Map(
-    courierIds.map((id, index) => [id, courierStatuses[index]]),
+  const courierStatusByKey = new Map(
+    courierLookups.map((lookup, index) => [lookup.key, courierStatuses[index]]),
   );
 
   const {
@@ -380,11 +417,22 @@ export default function Orders() {
     return "bg-emerald-100 text-emerald-700 border-emerald-200";
   };
 
-  const normalizeCourierStatus = (data?: CourierStatusResponse) =>
-    String(data?.delivery_status || data?.data?.delivery_status || "").trim().toLowerCase();
+  const normalizeCourierStatus = (data?: CourierStatusResponse) => {
+    const rawStatus = String(data?.delivery_status || data?.data?.delivery_status || "").trim().toLowerCase();
+    const normalized = rawStatus
+      .replace(/\s+/g, "_")
+      .replace(/[-/]+/g, "_")
+      .replace(/[^a-z0-9_]/g, "")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+
+    return normalized;
+  };
 
   const courierStatusLabel = (status: string) => {
-    switch (status) {
+    const normalized = status.trim();
+
+    switch (normalized) {
       case "in_review":
         return "In Review";
       case "pending":
@@ -404,7 +452,11 @@ export default function Orders() {
       case "unknown_approval_pending":
         return "Deleted";
       default:
-        return "No Entry";
+        return normalized
+          ? normalized
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (match) => match.toUpperCase())
+          : "No Entry";
     }
   };
 
@@ -572,8 +624,9 @@ export default function Orders() {
               {orders.map((o, idx) => {
                 const fraudQuery = fraudByPhone.get(o.customer?.phone || "");
                 const fraudSummary = summarizeFraud(fraudQuery?.data);
-                const courierQuery = o.courierDetails?.consignment_id
-                  ? courierStatusById.get(String(o.courierDetails.consignment_id))
+                const courierLookup = getCourierLookup(o);
+                const courierQuery = courierLookup
+                  ? courierStatusByKey.get(courierLookup.key) ?? null
                   : null;
                 const courierStatus = normalizeCourierStatus(courierQuery?.data);
 
@@ -638,23 +691,16 @@ export default function Orders() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {o.courierDetails?.consignment_id ? (
+                    {courierLookup ? (
                       courierQuery?.isLoading ? (
                         <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
                           <Loader2 className="h-3 w-3 animate-spin" />
                           Loading
                         </span>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => setCourierInfoOrder(o)}
-                          className="text-left"
-                          title="Open courier details"
-                        >
-                          <Badge variant="outline" className={courierStatusClass(courierStatus)}>
-                            {courierQuery?.isError ? "Status Error" : courierStatusLabel(courierStatus)}
-                          </Badge>
-                        </button>
+                        <Badge variant="outline" className={courierStatusClass(courierStatus)}>
+                          {courierQuery?.isError ? "Status Error" : courierStatusLabel(courierStatus)}
+                        </Badge>
                       )
                     ) : (
                       <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
@@ -700,14 +746,29 @@ export default function Orders() {
                         <ShieldAlert className="h-4 w-4 text-orange-500" />
                       </Button>
                       {o.courierDetails ? (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => setCourierInfoOrder(o)}
-                          title="Courier Info"
-                        >
-                          <Package className="h-4 w-4 text-blue-500" />
-                        </Button>
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setCourierInfoOrder(o)}
+                            title="Courier Info"
+                          >
+                            <Package className="h-4 w-4 text-blue-500" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleAddToCourier(o, true)}
+                            disabled={addingCourierId === o.id}
+                            title="Re-send to Courier"
+                          >
+                            {addingCourierId === o.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-green-500" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4 text-slate-500" />
+                            )}
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           size="icon"

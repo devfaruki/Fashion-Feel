@@ -65,6 +65,53 @@ router.get("/status/:consignmentId", async (req, res) => {
   }
 });
 
+// GET /api/courier/status/:type/:key
+router.get("/status/:type/:key", async (req, res) => {
+  try {
+    const { type, key } = req.params;
+    if (!type || !key) {
+      return res.status(400).json({ status: "error", message: "Lookup type and key are required" });
+    }
+
+    let statusPath;
+    switch (type) {
+      case "cid":
+        statusPath = `/status_by_cid/${encodeURIComponent(key)}`;
+        break;
+      case "invoice":
+        statusPath = `/status_by_invoice/${encodeURIComponent(key)}`;
+        break;
+      case "trackingcode":
+        statusPath = `/status_by_trackingcode/${encodeURIComponent(key)}`;
+        break;
+      default:
+        return res.status(400).json({ status: "error", message: "Invalid courier lookup type" });
+    }
+
+    const response = await fetch(`${process.env.COURIER_BASE_URL}${statusPath}`, {
+      method: "GET",
+      headers: {
+        "Api-Key": process.env.COURIER_API_KEY,
+        "Secret-Key": process.env.COURIER_SECRET_KEY,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const text = await response.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      result = { status: response.status === 200 ? "success" : "error", message: text };
+    }
+
+    res.status(response.status).json(result);
+  } catch (error) {
+    console.error("Error fetching courier status:", error);
+    res.status(500).json({ status: "error", message: "Internal server error" });
+  }
+});
+
 // POST /api/courier/create-order
 router.post("/create-order", async (req, res) => {
   try {
