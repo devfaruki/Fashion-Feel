@@ -1,0 +1,2 @@
+-- This migration file was restored as a no-op to keep history consistent.
+-- Intentionally left blank to avoid altering existing data.

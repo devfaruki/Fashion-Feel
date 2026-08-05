@@ -1,0 +1,183 @@
+// 🚀 Prisma Schema — Category removed from Filter, Filters now directly tied to Product
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+
+}
+
+// customer model
+model Customer {
+  id         Int      @id @default(autoincrement())
+  customerId String   @unique @default(uuid(4))
+  name       String
+  phone      String   @unique
+  address    String
+  district   String?
+  thana      String?
+  createdAt  DateTime @default(now())
+  Orders     Order[]
+
+  @@map("customer")
+}
+
+// category model
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  image     String?   // Category image URL or base64 encoded
+  order     Int       @default(0)  // Position/serial for custom ordering
+  status    String?   @default("active")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // 🔗 One category has many products
+  products  Product[]
+
+  @@map("category")
+}
+
+// brand model
+model Brand {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  image     String?
+  order     Int       @default(0)
+  status    String?   @default("active")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products  Product[]
+
+  @@map("brand")
+}
+
+// product model
+model Product {
+  id             Int       @id @default(autoincrement())
+  productId      Int       @unique
+  images         Json
+  name           String    @map("product_name") @db.VarChar(255)
+  price          Int
+  oldPrice       Int?      @map("discount_price")
+  badge          String?   @db.VarChar(50)
+  sizes          Json?
+  colors         Json?
+  variants       Json?
+  stock          String?   @default("available")
+  stockQty       Int       @default(0)
+  stockReserved  Int       @default(0)
+  lowStockThreshold Int    @default(5)
+  productSummary String?   @db.LongText
+  description    String    @db.LongText
+  isNew          Boolean   @default(false)
+  isFeatured     Boolean   @default(false)
+  rating         Int?      @default(0)
+  order          Int       @default(0)  // Position/serial for custom ordering
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // 🔗 Category relationship — each product belongs to one category
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId Int?
+
+  // 🔗 Brand relationship — each product belongs to one brand
+  brand      Brand? @relation(fields: [brandId], references: [id])
+  brandId    Int?
+
+  // 🔗 Review relationship — each product has many reviews
+  reviews    Review[]
+
+  @@map("product")
+}
+
+// review model
+model Review {
+  id           Int          @id @default(autoincrement())
+  customerName String       @map("customer_name")
+  rating       Int
+  comment      String       @db.LongText
+  images       Json?        // Stores array of image URLs
+  status       ReviewStatus @default(PENDING)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  
+  // 🔗 Product relationship
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId    Int          @map("product_id")
+
+  @@map("review")
+}
+
+// homepage hero sections
+model HeroSection {
+  id          Int      @id @default(autoincrement())
+  title       String
+  subtitle    String   @db.LongText
+  buttonText  String
+  buttonUrl   String   @default("/shop")
+  image       String
+  mobileImage String
+  order       Int      @default(0)
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("hero_section")
+}
+
+// order model
+model Order {
+  id             Int           @id @default(autoincrement())
+  customer       Customer      @relation(fields: [customerId], references: [id], onUpdate: Cascade)
+  customerId     Int
+  totalPrice     Int
+  deliveryCharge Int
+  district       String?
+  thana          String?
+  orderStatus    OrderStatus   @default(PENDING)
+  orderDate      DateTime?     @default(now())
+  paymentMethod  PaymentMethod @default(CASHON)
+  items          Json
+  note           String?
+  courierDetails Json?
+  stockReserved  Boolean       @default(false)
+  stockFinalized Boolean       @default(false)
+
+  @@map("order")
+}
+
+// admin model for authentication
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // Should be hashed with bcrypt
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admin")
+}
+
+// all enums
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASHON
+  BKASH
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  CANCELLED
+}

@@ -1,0 +1,350 @@
+[
+  {
+    "id": "owner",
+    "name": "Owner",
+    "active": true,
+    "permissions": {
+      "dashboard": {
+        "view": true,
+        "edit": false
+      },
+      "orders": {
+        "view": true,
+        "edit": true
+      },
+      "products": {
+        "view": true,
+        "edit": true
+      },
+      "variants": {
+        "view": true,
+        "edit": true
+      },
+      "inventory": {
+        "view": true,
+        "edit": true
+      },
+      "categories": {
+        "view": true,
+        "edit": true
+      },
+      "filters": {
+        "view": true,
+        "edit": true
+      },
+      "customers": {
+        "view": true,
+        "edit": true
+      },
+      "reviews": {
+        "view": true,
+        "edit": true
+      },
+      "homePage": {
+        "view": true,
+        "edit": true
+      },
+      "analytics": {
+        "view": true,
+        "edit": false
+      },
+      "reports": {
+        "view": true,
+        "edit": false
+      },
+      "incomeLoss": {
+        "view": true,
+        "edit": false
+      },
+      "stockMovements": {
+        "view": true,
+        "edit": true
+      },
+      "purchases": {
+        "view": true,
+        "edit": true
+      },
+      "offlineSales": {
+        "view": true,
+        "edit": true
+      },
+      "expenses": {
+        "view": true,
+        "edit": true
+      },
+      "users": {
+        "view": true,
+        "edit": true
+      },
+      "roles": {
+        "view": true,
+        "edit": true
+      },
+      "settings": {
+        "view": true,
+        "edit": true
+      }
+    }
+  },
+  {
+    "id": "admin",
+    "name": "Admin",
+    "active": true,
+    "permissions": {
+      "dashboard": {
+        "view": true,
+        "edit": false
+      },
+      "orders": {
+        "view": true,
+        "edit": true
+      },
+      "products": {
+        "view": true,
+        "edit": true
+      },
+      "variants": {
+        "view": true,
+        "edit": true
+      },
+      "inventory": {
+        "view": true,
+        "edit": true
+      },
+      "categories": {
+        "view": true,
+        "edit": true
+      },
+      "filters": {
+        "view": true,
+        "edit": true
+      },
+      "customers": {
+        "view": true,
+        "edit": true
+      },
+      "reviews": {
+        "view": true,
+        "edit": true
+      },
+      "homePage": {
+        "view": true,
+        "edit": true
+      },
+      "analytics": {
+        "view": true,
+        "edit": false
+      },
+      "reports": {
+        "view": true,
+        "edit": false
+      },
+      "incomeLoss": {
+        "view": true,
+        "edit": false
+      },
+      "stockMovements": {
+        "view": true,
+        "edit": true
+      },
+      "purchases": {
+        "view": true,
+        "edit": true
+      },
+      "offlineSales": {
+        "view": true,
+        "edit": true
+      },
+      "expenses": {
+        "view": true,
+        "edit": true
+      },
+      "users": {
+        "view": true,
+        "edit": true
+      },
+      "roles": {
+        "view": true,
+        "edit": true
+      },
+      "settings": {
+        "view": true,
+        "edit": true
+      }
+    }
+  },
+  {
+    "id": "manager",
+    "name": "Manager",
+    "active": true,
+    "permissions": {
+      "dashboard": {
+        "view": true,
+        "edit": false
+      },
+      "orders": {
+        "view": true,
+        "edit": true
+      },
+      "products": {
+        "view": true,
+        "edit": true
+      },
+      "variants": {
+        "view": false,
+        "edit": false
+      },
+      "inventory": {
+        "view": true,
+        "edit": true
+      },
+      "categories": {
+        "view": true,
+        "edit": true
+      },
+      "filters": {
+        "view": false,
+        "edit": false
+      },
+      "customers": {
+        "view": true,
+        "edit": true
+      },
+      "reviews": {
+        "view": true,
+        "edit": true
+      },
+      "homePage": {
+        "view": true,
+        "edit": true
+      },
+      "analytics": {
+        "view": false,
+        "edit": false
+      },
+      "reports": {
+        "view": true,
+        "edit": false
+      },
+      "incomeLoss": {
+        "view": false,
+        "edit": false
+      },
+      "stockMovements": {
+        "view": false,
+        "edit": false
+      },
+      "purchases": {
+        "view": false,
+        "edit": false
+      },
+      "offlineSales": {
+        "view": false,
+        "edit": false
+      },
+      "expenses": {
+        "view": false,
+        "edit": false
+      },
+      "users": {
+        "view": false,
+        "edit": false
+      },
+      "roles": {
+        "view": false,
+        "edit": false
+      },
+      "settings": {
+        "view": false,
+        "edit": false
+      }
+    }
+  },
+  {
+    "id": "staff",
+    "name": "Staff",
+    "active": true,
+    "permissions": {
+      "dashboard": {
+        "view": true,
+        "edit": false
+      },
+      "orders": {
+        "view": true,
+        "edit": true
+      },
+      "products": {
+        "view": true,
+        "edit": true
+      },
+      "variants": {
+        "view": false,
+        "edit": false
+      },
+      "inventory": {
+        "view": false,
+        "edit": false
+      },
+      "categories": {
+        "view": false,
+        "edit": false
+      },
+      "filters": {
+        "view": false,
+        "edit": false
+      },
+      "customers": {
+        "view": true,
+        "edit": true
+      },
+      "reviews": {
+        "view": false,
+        "edit": false
+      },
+      "homePage": {
+        "view": false,
+        "edit": false
+      },
+      "analytics": {
+        "view": false,
+        "edit": false
+      },
+      "reports": {
+        "view": false,
+        "edit": false
+      },
+      "incomeLoss": {
+        "view": false,
+        "edit": false
+      },
+      "stockMovements": {
+        "view": false,
+        "edit": false
+      },
+      "purchases": {
+        "view": false,
+        "edit": false
+      },
+      "offlineSales": {
+        "view": false,
+        "edit": false
+      },
+      "expenses": {
+        "view": false,
+        "edit": false
+      },
+      "users": {
+        "view": false,
+        "edit": false
+      },
+      "roles": {
+        "view": false,
+        "edit": false
+      },
+      "settings": {
+        "view": false,
+        "edit": false
+      }
+    }
+  }
+]

@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fasion Feel design system — deep yellow couture theme. All colors HSL. */
+
+@layer base {
+  :root {
+    --background: 48 45% 98%;
+    --foreground: 35 45% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 35 45% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 35 45% 12%;
+
+    --primary: 44 96% 46%;
+    --primary-foreground: 35 45% 12%;
+    --primary-glow: 47 98% 58%;
+
+    --secondary: 48 80% 93%;
+    --secondary-foreground: 35 70% 24%;
+
+    --muted: 46 45% 93%;
+    --muted-foreground: 35 20% 36%;
+
+    --accent: 38 92% 43%;
+    --accent-foreground: 35 45% 12%;
+
+    --blush: 48 80% 93%;
+    --blush-foreground: 35 70% 24%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 44 40% 86%;
+    --input: 44 40% 86%;
+    --ring: 44 96% 46%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(44 96% 46%), hsl(38 92% 43%));
+    --gradient-blush: linear-gradient(135deg, hsl(48 80% 93%), hsl(48 45% 98%));
+    --gradient-glow: linear-gradient(135deg, hsl(47 98% 58%), hsl(44 96% 46%));
+
+    --shadow-soft: 0 2px 12px -4px hsl(40 70% 30% / 0.1);
+    --shadow-elegant: 0 10px 40px -10px hsl(40 90% 35% / 0.2);
+    --shadow-glow: 0 0 40px hsl(47 98% 58% / 0.35);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 35 45% 14%;
+    --sidebar-primary: 44 96% 46%;
+    --sidebar-primary-foreground: 35 45% 12%;
+    --sidebar-accent: 48 80% 93%;
+    --sidebar-accent-foreground: 35 70% 24%;
+    --sidebar-border: 44 40% 86%;
+    --sidebar-ring: 44 96% 46%;
+  }
+
+  .dark {
+    --background: 35 35% 8%;
+    --foreground: 48 35% 94%;
+
+    --card: 35 30% 11%;
+    --card-foreground: 48 35% 94%;
+
+    --popover: 35 30% 11%;
+    --popover-foreground: 48 35% 94%;
+
+    --primary: 47 96% 55%;
+    --primary-foreground: 35 45% 10%;
+    --primary-glow: 47 98% 58%;
+
+    --secondary: 35 25% 16%;
+    --secondary-foreground: 48 35% 94%;
+
+    --muted: 35 25% 16%;
+    --muted-foreground: 45 16% 66%;
+
+    --accent: 42 95% 52%;
+    --accent-foreground: 35 45% 10%;
+
+    --blush: 35 25% 16%;
+    --blush-foreground: 48 35% 94%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 25% 20%;
+    --input: 35 25% 20%;
+    --ring: 47 96% 55%;
+
+    --sidebar-background: 35 35% 10%;
+    --sidebar-foreground: 48 35% 92%;
+    --sidebar-primary: 47 96% 55%;
+    --sidebar-primary-foreground: 35 45% 10%;
+    --sidebar-accent: 35 25% 16%;
+    --sidebar-accent-foreground: 48 35% 94%;
+    --sidebar-border: 35 25% 20%;
+    --sidebar-ring: 47 96% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "ss01", "cv01";
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Cormorant Garamond', serif;
+    @apply tracking-tight;
+  }
+
+  .text-primary,
+  .text-primary\/30,
+  .text-primary\/60,
+  .text-accent,
+  .text-accent\/30,
+  .text-accent\/60,
+  .hover\:text-primary:hover,
+  .hover\:text-accent:hover,
+  .group:hover .group-hover\:text-primary,
+  .group:hover .group-hover\:text-accent {
+    color: hsl(var(--foreground));
+  }
+}

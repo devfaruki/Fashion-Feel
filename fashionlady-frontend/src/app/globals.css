@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fasion Feel design system — deep yellow + warm cream + charcoal */
+@layer base {
+  :root {
+    --font-sans: Arial, Helvetica, sans-serif;
+    --font-serif: Georgia, "Times New Roman", serif;
+
+    --background: 48 45% 98%;
+    --foreground: 35 45% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 35 45% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 35 45% 12%;
+
+    /* Deep yellow primary */
+    --primary: 44 96% 46%;
+    --primary-foreground: 35 45% 12%;
+    --primary-glow: 47 98% 58%;
+
+    /* Warm cream */
+    --secondary: 48 80% 93%;
+    --secondary-foreground: 35 70% 24%;
+
+    --muted: 46 45% 93%;
+    --muted-foreground: 35 20% 36%;
+
+    /* Amber accent */
+    --accent: 38 92% 43%;
+    --accent-foreground: 35 45% 12%;
+    --accent-soft: 45 90% 88%;
+
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 44 40% 86%;
+    --input: 44 40% 86%;
+    --ring: 44 96% 46%;
+
+    --radius: 0.25rem;
+
+    --gradient-hero: linear-gradient(135deg, hsl(44 96% 42%) 0%, hsl(47 98% 56%) 60%, hsl(38 92% 43%) 130%);
+    --gradient-gold: linear-gradient(135deg, hsl(47 98% 58%), hsl(38 92% 43%));
+    --shadow-elegant: 0 20px 60px -20px hsl(40 90% 35% / 0.28);
+    --shadow-soft: 0 4px 20px -4px hsl(40 70% 30% / 0.14);
+
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 35 35% 8%;
+    --foreground: 48 35% 94%;
+    --card: 35 30% 11%;
+    --card-foreground: 48 35% 94%;
+    --popover: 35 30% 11%;
+    --popover-foreground: 48 35% 94%;
+    --primary: 47 96% 55%;
+    --primary-foreground: 35 45% 10%;
+    --secondary: 35 25% 16%;
+    --secondary-foreground: 48 35% 94%;
+    --muted: 35 25% 16%;
+    --muted-foreground: 45 16% 66%;
+    --accent: 42 95% 52%;
+    --accent-foreground: 35 45% 10%;
+    --border: 35 25% 20%;
+    --input: 35 25% 20%;
+    --ring: 47 96% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-serif {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .story-link {
+    @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-px after:bottom-0 after:left-0 after:bg-current after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-500 hover:-translate-y-1;
+  }
+
+  .text-primary,
+  .text-primary\/30,
+  .text-primary\/60,
+  .text-accent,
+  .text-accent\/30,
+  .text-accent\/60,
+  .hover\:text-primary:hover,
+  .hover\:text-accent:hover,
+  .group:hover .group-hover\:text-primary,
+  .group:hover .group-hover\:text-accent {
+    color: hsl(var(--foreground));
+  }
+}
