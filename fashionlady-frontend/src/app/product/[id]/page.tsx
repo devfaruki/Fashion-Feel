@@ -296,17 +296,29 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     };
 
     const relatedQuery = useQuery({
-        queryKey: ["random-products", productId],
+        queryKey: ["related-products", productId, product?.categoryId, product?.subCategoryId],
         queryFn: async () => {
-            const { data } = await api.get("/product/random-products", {
-                params: { limit: 4, excludeId: productId },
+            const { data } = await api.get("/product/all-products", {
+                params: {
+                    limit: 12,
+                    activeOnly: true,
+                    categoryId: product?.categoryId,
+                    ...(product?.subCategoryId ? { subCategoryId: product.subCategoryId } : {}),
+                },
             });
-            return data.data as Product[];
+            return data.data.products as Product[];
         },
-        enabled: !!productId,
+        enabled: !!product?.categoryId,
     });
 
-    const related = (relatedQuery.data ?? []).filter((p) => p.stock !== "unavailable");
+    const related = (relatedQuery.data ?? [])
+        .filter((p) => {
+            if (p.id === productId || p.stock === "unavailable") return false;
+            if (p.categoryId !== product?.categoryId) return false;
+            if (product?.subCategoryId) return p.subCategoryId === product.subCategoryId;
+            return !p.subCategoryId;
+        })
+        .slice(0, 8);
 
     if (!Number.isFinite(productId) || productQuery.isError) {
         router.replace("/shop");

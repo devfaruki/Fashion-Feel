@@ -28,7 +28,7 @@ export interface CrudField<T> {
     label: string;
     type?: FieldType;
     placeholder?: string;
-    options?: { label: string; value: string | number }[];
+    options?: { label: string; value: string | number }[] | ((values: Record<string, unknown>) => { label: string; value: string | number }[]);
     multiple?: boolean;
     showWhen?: (values: Record<string, unknown>) => boolean;
 }
@@ -471,7 +471,11 @@ function FormDialog<T>({
     }, [defaults, existing, getInitialFormValues, normalizeSizes, normalizeVariantDetails, open]);
 
     const setFieldValue = (key: string, value: unknown) => {
-        setFormValues((current) => ({ ...current, [key]: value }));
+        setFormValues((current) => ({
+            ...current,
+            [key]: value,
+            ...(isProductForm && key === "categoryId" ? { subCategoryId: "" } : {}),
+        }));
     };
 
     const setSizes = (nextSizes: string[]) => {
@@ -642,6 +646,8 @@ function FormDialog<T>({
                     <div className={`grid gap-4 ${isProductForm ? "lg:grid-cols-3" : "sm:grid-cols-2"}`}>
                         {fields.map((f) => {
                             if (f.showWhen && !f.showWhen(formValues)) return null;
+                            const fieldOptions =
+                                typeof f.options === "function" ? f.options(formValues) : (f.options ?? []);
 
                             return (
                             <div
@@ -1009,7 +1015,7 @@ function FormDialog<T>({
                                         className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm"
                                     >
                                         <option value="">Select...</option>
-                                        {(f.options ?? []).map((opt) => (
+                                        {fieldOptions.map((opt) => (
                                             <option key={String(opt.value)} value={String(opt.value)}>
                                                 {opt.label}
                                             </option>

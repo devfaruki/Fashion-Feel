@@ -1,8 +1,8 @@
 {
   "brandName": "Fasion Feel",
-  "headerLogo": "/public/site-settings/header-logo_1785700727213_a1040b722dd0.webp",
-  "footerLogo": "/public/site-settings/footer-logo_1785700786865_890814e8623f.webp",
-  "favicon": "/public/site-settings/favicon_1785700786887_aa1a99d99faa.webp",
+  "headerLogo": "/public/site-settings/header-logo_1785944030953_2c1eaa645e91.webp",
+  "footerLogo": "/public/site-settings/footer-logo_1785944030968_8fcf3622a816.webp",
+  "favicon": "/public/site-settings/favicon_1785944030979_90d9c3b5ef17.webp",
   "phone": "01603-438543",
   "email": "fasionfeel.collection@gmail.com",
   "showroomTitle": "Dhanmondi Showroom",
@@ -11,5 +11,14 @@
   "aboutIntro": "A fashion destination where you can find original Pakistani & Indian collection to keep your style unique.",
   "aboutStory": "Fasion Feel began as a small studio in Dhanmondi with one belief - that every woman deserves authentic, beautifully crafted clothing without having to fly across borders to find it.",
   "facebookUrl": "https://www.facebook.com/fasionfeel.com.bd",
-  "instagramUrl": "https://www.instagram.com/fasionfeel"
+  "instagramUrl": "https://www.instagram.com/fasionfeel",
+  "gtmId": "",
+  "ga4MeasurementId": "",
+  "microsoftClarityId": "",
+  "metaPixelId": "",
+  "metaPixelAccessToken": "",
+  "metaPixelTestCode": "",
+  "tiktokPixelId": "",
+  "tiktokPixelAccessToken": "",
+  "tiktokPixelTestCode": ""
 }

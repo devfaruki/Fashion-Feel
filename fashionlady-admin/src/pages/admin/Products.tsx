@@ -251,14 +251,15 @@ export default function Products() {
     [categoriesQuery.data],
   );
 
-  const subCategoryOptions = useMemo(
-    () =>
-      (categoriesQuery.data ?? []).flatMap((category) =>
-        (category.subCategories ?? []).map((subCategory) => ({
-          label: `${category.name} / ${subCategory.name}`,
-          value: subCategory.id,
-        })),
-      ),
+  const getSubCategoryOptions = useMemo(
+    () => (values: Record<string, unknown>) => {
+      const selectedCategoryId = Number(values.categoryId || 0);
+      const category = (categoriesQuery.data ?? []).find((item) => item.id === selectedCategoryId);
+      return (category?.subCategories ?? []).map((subCategory) => ({
+        label: subCategory.name,
+        value: subCategory.id,
+      }));
+    },
     [categoriesQuery.data],
   );
 
@@ -342,7 +343,7 @@ export default function Products() {
             key: "subCategoryId",
             label: "Sub Category",
             type: "select",
-            options: subCategoryOptions,
+            options: getSubCategoryOptions,
           },
           {
             key: "brandId",

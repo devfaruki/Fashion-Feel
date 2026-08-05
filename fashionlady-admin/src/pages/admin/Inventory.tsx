@@ -53,6 +53,21 @@ function valueOf(item: InventoryItem, drafts: Record<string, InventoryDraft>, ke
   return drafts[item.id]?.[key] ?? item[key as keyof InventoryItem] ?? "";
 }
 
+function formatMoney(value: number) {
+  return `BDT ${value.toLocaleString()}`;
+}
+
+function formatRange(items: InventoryItem[], key: "buyingPrice" | "oldPrice" | "customerPrice") {
+  const values = items
+    .map((item) => Number(item[key] || 0))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  if (values.length === 0) return "Not set";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return min === max ? formatMoney(min) : `${formatMoney(min)} - ${formatMoney(max)}`;
+}
+
 function groupInventory(items: InventoryItem[]) {
   const map = new Map<number, InventoryGroup>();
 
@@ -369,9 +384,9 @@ export default function Inventory() {
                           <>
                             <td className="px-4 py-3 text-muted-foreground">Expand to edit</td>
                             <td className="px-4 py-3 font-medium">{group.totalStock}</td>
-                            <td className="px-4 py-3 text-muted-foreground">-</td>
-                            <td className="px-4 py-3 text-muted-foreground">-</td>
-                            <td className="px-4 py-3 text-muted-foreground">-</td>
+                            <td className="px-4 py-3 text-xs">{formatRange(group.rows, "buyingPrice")}</td>
+                            <td className="px-4 py-3 text-xs">{formatRange(group.rows, "oldPrice")}</td>
+                            <td className="px-4 py-3 text-xs font-medium">{formatRange(group.rows, "customerPrice")}</td>
                             <td className="px-4 py-3">
                               <Badge variant={group.totalStock > 0 ? "secondary" : "destructive"}>
                                 {group.totalStock > 0 ? "Available" : "Unavailable"}
