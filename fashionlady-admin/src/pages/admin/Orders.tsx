@@ -45,6 +45,11 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { getErrorMessage } from "@/lib/utils";
 import { api, resolveAssetUrl } from "@/lib/api";
 import type { Product } from "@/types/store";
+import {
+  BANGLADESH_DISTRICTS,
+  DISTRICT_UPAZILAS,
+  getDeliveryChargeForDistrict,
+} from "@/lib/bangladesh-address";
 
 // Server-side order status values (uppercase enum from Prisma)
 type ServerOrderStatus = "PENDING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
@@ -346,10 +351,19 @@ export default function Orders() {
   });
   const createSubtotal = createItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const createTotal = createSubtotal + Number(createDeliveryCharge || 0);
+  const createDistrictOptions = [...BANGLADESH_DISTRICTS];
+  const createThanaOptions = createCustomer.district
+    ? DISTRICT_UPAZILAS[createCustomer.district] || []
+    : [];
 
   useEffect(() => {
     setSelectedVariantKey("");
   }, [selectedProductId]);
+
+  useEffect(() => {
+    const charge = getDeliveryChargeForDistrict(createCustomer.district, createCustomer.thana);
+    setCreateDeliveryCharge(charge ?? 0);
+  }, [createCustomer.district, createCustomer.thana]);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -441,7 +455,11 @@ export default function Orders() {
   };
 
   const updateCreateCustomer = (key: keyof typeof createCustomer, value: string) => {
-    setCreateCustomer((current) => ({ ...current, [key]: value }));
+    setCreateCustomer((current) => ({
+      ...current,
+      [key]: value,
+      ...(key === "district" ? { thana: "" } : {}),
+    }));
   };
 
   const addSelectedProductToOrder = () => {
@@ -1099,19 +1117,46 @@ export default function Orders() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>District</Label>
-                  <Input
+                  <Select
                     value={createCustomer.district}
-                    onChange={(event) => updateCreateCustomer("district", event.target.value)}
-                    placeholder="District"
-                  />
+                    onValueChange={(value) => updateCreateCustomer("district", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select district" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {createDistrictOptions.map((district) => (
+                        <SelectItem key={district} value={district}>
+                          {district}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Thana / Upazila</Label>
-                  <Input
+                  <Select
                     value={createCustomer.thana}
-                    onChange={(event) => updateCreateCustomer("thana", event.target.value)}
-                    placeholder="Thana / Upazila"
-                  />
+                    onValueChange={(value) => updateCreateCustomer("thana", value)}
+                    disabled={!createCustomer.district || createThanaOptions.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          !createCustomer.district
+                            ? "Select district first"
+                            : "Select thana / upazila"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {createThanaOptions.map((thana) => (
+                        <SelectItem key={thana} value={thana}>
+                          {thana}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Delivery Charge</Label>
@@ -1119,8 +1164,12 @@ export default function Orders() {
                     type="number"
                     min={0}
                     value={createDeliveryCharge}
-                    onChange={(event) => setCreateDeliveryCharge(Number(event.target.value))}
+                    readOnly
+                    className="bg-muted"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Auto calculated: Dhaka city BDT 70, Dhaka outer and outside Dhaka BDT 130.
+                  </p>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label>Note</Label>
