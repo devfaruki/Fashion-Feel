@@ -52,6 +52,7 @@ import {
     Minus,
     Loader2,
     Eye,
+    Printer,
     Edit3,
     Trash2,
 } from "lucide-react";
@@ -141,6 +142,207 @@ const formatDate = (d: string) => {
     });
 };
 
+function handlePrint(o: OfflineSaleOrder, invoiceLogo: string) {
+    const win = window.open("", "_blank", "width=900,height=1100");
+    if (!win) return;
+
+    const computedItemsTotal = itemsTotal(o);
+    const computedDelivery = Number(o.deliveryCharge) || 0;
+    const computedTotal = o.totalPrice || computedItemsTotal + computedDelivery;
+    const customerAddress = [o.customer?.address, o.customer?.thana, o.customer?.district].filter(Boolean).join(", ");
+    const compactInvoice = Array.isArray(o.items) && o.items.length <= 5;
+    const rows = Array.isArray(o.items)
+        ? o.items
+            .map((i) => {
+                const image = i.image ? `<img src="${i.image}" alt="${i.name || i.product || "Product"}" />` : "<div class=\"product-placeholder\">No Image</div>";
+                return `
+                    <tr>
+                      <td>
+                        <div class="product-cell">
+                          <div class="product-thumb">${image}</div>
+                          <div>
+                            <div class="product-title">${i.name || i.product || "—"}</div>
+                            ${i.size ? `<div class="product-meta">Size: ${i.size}</div>` : ""}
+                          </div>
+                        </div>
+                      </td>
+                      <td class="center">${i.quantity ?? i.qty ?? 1}</td>
+                      <td class="right">${formatBDT(i.price ?? 0)}</td>
+                      <td class="right">${formatBDT((i.price ?? 0) * (i.quantity ?? i.qty ?? 1))}</td>
+                    </tr>`;
+            })
+            .join("")
+        : "";
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>Invoice ${orderNumber(o)}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <style>
+            :root { color-scheme: light; }
+            * { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; background: #fff; }
+            body { padding: 16px; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; }
+            @page { size: A4 portrait; margin: 12mm; }
+            .page { max-width: 900px; margin: 0 auto; }
+            .brand { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 22px; }
+            .brand-logo img { width: 150px; height: auto; object-fit: contain; }
+            .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.04em; margin: 0; color: #d6336c; }
+            .brand-tagline { margin: 8px 0 0; color: #6b7280; font-size: 14px; }
+            .brand-info { text-align: right; font-size: 13px; color: #4b5563; line-height: 1.6; }
+            .brand-info strong { color: #111827; }
+            .divider { height: 1px; background: #e5e7eb; margin: 24px 0; border: none; }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+            .panel { padding: 18px 20px; border: 1px solid #e5e7eb; border-radius: 16px; background: #f9fafb; }
+            .panel h2 { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.08em; }
+            .panel p { margin: 0; color: #4b5563; line-height: 1.75; font-size: 14px; }
+            .panel p span { display: block; color: #111827; font-weight: 600; }
+            .invoice-meta { text-align: right; }
+            .invoice-meta .value { font-size: 22px; font-weight: 800; color: #111827; margin-top: 6px; }
+            .invoice-meta .label { font-size: 12px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.08em; }
+            .table-wrap { overflow-x: auto; margin-top: 24px; }
+            table { width: 100%; border-collapse: collapse; font-size: 14px; page-break-inside: auto; }
+            thead th { text-align: left; padding: 14px 12px; color: #374151; font-weight: 700; border-bottom: 2px solid #e5e7eb; }
+            tbody tr:nth-child(even) { background: #f8fafc; }
+            td { padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+            .product-cell { display: flex; gap: 12px; align-items: center; }
+            .product-thumb { width: 64px; min-width: 64px; height: 64px; border-radius: 12px; overflow: hidden; background: #f3f4f6; display: grid; place-items: center; }
+            .product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+            .product-placeholder { width: 100%; height: 100%; display: grid; place-items: center; font-size: 10px; color: #9ca3af; padding: 6px; text-align: center; }
+            .product-title { font-weight: 700; color: #111827; }
+            .product-meta { margin-top: 4px; color: #6b7280; font-size: 12px; }
+            .center { text-align: center; }
+            .right { text-align: right; }
+            .totals { margin-top: 18px; max-width: 360px; margin-left: auto; }
+            .totals .row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; color: #4b5563; }
+            .totals .row strong { color: #111827; }
+            .totals .total { font-size: 18px; font-weight: 800; margin-top: 8px; }
+            .note-box { margin-top: 30px; padding: 18px 20px; border-radius: 16px; border: 1px solid #e5e7eb; background: #fff; color: #4b5563; font-size: 13px; line-height: 1.7; }
+            .signature-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 42px; }
+            .signature-block { padding-top: 24px; border-top: 1px solid #e5e7eb; }
+            .signature-line { height: 80px; border-bottom: 1px solid #d1d5db; margin-bottom: 8px; }
+            .signature-label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+            .footer { margin-top: 42px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; color: #6b7280; font-size: 12px; }
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-row-group; }
+            @media print {
+              body { padding: 8px; }
+              .page { margin: 0; width: auto; page-break-after: auto; }
+              .compact { page-break-after: avoid; page-break-inside: avoid; }
+              .brand { margin-bottom: 16px; }
+              .panel { padding: 14px 16px; }
+              thead th, td { padding: 10px; }
+              .signature-row { gap: 16px; margin-top: 28px; }
+              .totals { margin-top: 16px; }
+              .footer { margin-top: 32px; }
+              .brand, .grid-2, .signature-row, .footer, .table-wrap, .totals, .note-box { page-break-inside: avoid; }
+            }
+            @media (max-width: 720px) {
+              .brand, .grid-2, .signature-row, .footer { grid-template-columns: 1fr; display: block; }
+              .invoice-meta { text-align: left; margin-top: 16px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="page${compactInvoice ? " compact" : ""}">
+            <header class="brand">
+              <div class="brand-logo">
+                <img src="${invoiceLogo}" alt="Fashion Feel Logo" onerror="this.src='${invoiceLogo}'" />
+              </div>
+              <div>
+                <p class="brand-title">Fashion Feel</p>
+                <p class="brand-tagline">Premium fashion for the modern lifestyle</p>
+              </div>
+              <div class="brand-info">
+                <div><strong>Fashion Feel</strong></div>
+                <div>123 Fashion Ave, Dhaka, Bangladesh</div>
+                <div>hello@fashionfeel.com</div>
+                <div>+880 1234 567890</div>
+                <div>www.fashionfeel.com</div>
+              </div>
+            </header>
+
+            <div class="grid-2">
+              <section class="panel">
+                <h2>Billing To</h2>
+                <p><span>${o.customer?.name || "—"}</span>${o.customer?.phone ? `<br/>${o.customer.phone}` : ""}${customerAddress ? `<br/>${customerAddress}` : ""}</p>
+              </section>
+              <section class="panel invoice-meta">
+                <div class="label">Invoice</div>
+                <div class="value">${orderNumber(o)}</div>
+                <div class="label" style="margin-top:18px;">Date</div>
+                <div>${formatDate(o.orderDate)}</div>
+                <div class="label" style="margin-top:18px;">Payment</div>
+                <div>${o.paymentMethod === "CASHON" ? "Cash on Delivery" : o.paymentMethod}</div>
+                <div class="label" style="margin-top:18px;">Status</div>
+                <div>${o.orderStatus}</div>
+              </section>
+            </div>
+
+            <hr class="divider" />
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th class="center">Qty</th>
+                    <th class="right">Unit Price</th>
+                    <th class="right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+
+            <div class="totals">
+              <div class="row"><span>Subtotal</span><strong>${formatBDT(computedItemsTotal)}</strong></div>
+              <div class="row"><span>Delivery Charge</span><strong>${computedDelivery ? formatBDT(computedDelivery) : "Free"}</strong></div>
+              <div class="row total"><span>Total Amount</span><strong>${formatBDT(computedTotal)}</strong></div>
+            </div>
+
+            ${o.note ? `<div class="note-box"><strong>Order Note:</strong> ${o.note}</div>` : ""}
+
+            <div class="signature-row">
+              <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-label">Customer Signature</div>
+              </div>
+              <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-label">Authorized Signature</div>
+              </div>
+            </div>
+
+            <footer class="footer">
+              <div>Thank you for shopping with Fashion Feel.</div>
+              <div>Please retain this invoice for your records.</div>
+            </footer>
+          </div>
+          <script>
+            const images = Array.from(document.images);
+            const loadPromises = images.map(img => {
+              if (img.complete) return Promise.resolve();
+              return new Promise(resolve => {
+                img.addEventListener('load', resolve);
+                img.addEventListener('error', resolve);
+              });
+            });
+            Promise.all(loadPromises).then(() => {
+              window.print();
+              setTimeout(() => window.close(), 300);
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    win.document.close();
+}
+
 export default function OfflineSales() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
@@ -195,6 +397,7 @@ export default function OfflineSales() {
 
     const orders = offlineSalesQuery.data?.pages.flatMap((p) => p.orders) ?? [];
 
+    const invoiceLogo = new URL("/fasionfeel-logo.jpg", window.location.origin).href;
     const productsQuery = useQuery({
         queryKey: ["order-create-products", debouncedProductSearch],
         queryFn: async () => {
@@ -519,6 +722,9 @@ export default function OfflineSales() {
                                             <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setViewingSale(order)}>
                                                 <Eye className="h-4 w-4" />
                                             </Button>
+                                            <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => handlePrint(order, invoiceLogo)}>
+                                                <Printer className="h-4 w-4" />
+                                            </Button>
                                             <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => {
                                                 setEditingSale(order);
                                                 setEditingPaymentMethod(order.paymentMethod || "CASHON");
@@ -783,6 +989,7 @@ export default function OfflineSales() {
                                         <Table className="min-w-full">
                                             <TableHeader>
                                                 <TableRow className="bg-secondary/40">
+                                                    <TableHead>Image</TableHead>
                                                     <TableHead>Product</TableHead>
                                                     <TableHead>Size</TableHead>
                                                     <TableHead className="text-right">Qty</TableHead>
@@ -793,6 +1000,17 @@ export default function OfflineSales() {
                                                 {Array.isArray(viewingSale.items) &&
                                                     viewingSale.items.map((item, idx) => (
                                                         <TableRow key={idx} className="hover:bg-secondary/30">
+                                                            <TableCell>
+                                                                <div className="h-12 w-12 overflow-hidden rounded-lg border bg-secondary">
+                                                                    {item.image ? (
+                                                                        <img
+                                                                            src={item.image}
+                                                                            alt={item.name || item.product || "Product"}
+                                                                            className="h-full w-full object-cover"
+                                                                        />
+                                                                    ) : null}
+                                                                </div>
+                                                            </TableCell>
                                                             <TableCell>{item.name || item.product || "—"}</TableCell>
                                                             <TableCell className="text-muted-foreground">{item.size || "—"}</TableCell>
                                                             <TableCell className="text-right">{item.quantity ?? item.qty ?? 1}</TableCell>
@@ -820,6 +1038,10 @@ export default function OfflineSales() {
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setViewingSale(null)}>
                                     Close
+                                </Button>
+                                <Button variant="outline" onClick={() => viewingSale && handlePrint(viewingSale, invoiceLogo)}>
+                                    <Printer className="mr-2 h-4 w-4" />
+                                    Print
                                 </Button>
                                 <Button onClick={() => {
                                     if (viewingSale) {
