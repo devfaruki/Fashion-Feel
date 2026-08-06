@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Trash2, Printer, Search, RefreshCw, Package, ShieldAlert, Truck, Loader2 } from "lucide-react";
+import { Eye, Pencil, Trash2, Printer, Search, RefreshCw, Package, ShieldAlert, Truck, Loader2, Plus, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -43,7 +43,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { getErrorMessage } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { api, resolveAssetUrl } from "@/lib/api";
+import type { Product } from "@/types/store";
 
 // Server-side order status values (uppercase enum from Prisma)
 type ServerOrderStatus = "PENDING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
@@ -107,7 +108,24 @@ interface OrderItem {
   qty?: number;
   size?: string;
   image?: string;
+  variantSize?: string;
+  variantColor?: string;
 }
+
+type CreateOrderItem = {
+  lineId: string;
+  productId: number;
+  name: string;
+  image: string;
+  size: string;
+  variantSize: string;
+  variantColor: string;
+  quantity: number;
+  price: number;
+  stock: number | null;
+};
+
+type ProductVariant = NonNullable<NonNullable<Product["variants"]>[number]>;
 
 interface Customer {
   id: number;
@@ -154,6 +172,27 @@ const getCourierLookup = (order: Order): CourierLookup | null => {
   return null;
 };
 
+const getProductImage = (product?: Product | null, variantImage?: string) => {
+  const image = variantImage || product?.images?.[0] || "";
+  return resolveAssetUrl(image) || "";
+};
+
+const getActiveProductVariants = (product?: Product | null) =>
+  (product?.variants ?? []).filter((variant) => variant && variant.active !== false);
+
+const getVariantStock = (variant?: ProductVariant) => {
+  const stock = Number.parseInt(String(variant?.openingStock ?? 0), 10);
+  return Number.isFinite(stock) && stock >= 0 ? stock : 0;
+};
+
+const splitVariantLabel = (label: string) => {
+  const [size, ...colorParts] = label.split("/").map((part) => part.trim());
+  return {
+    size: size || label,
+    color: colorParts.join(" / "),
+  };
+};
+
 export default function Orders() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
@@ -165,6 +204,23 @@ export default function Orders() {
   const [fraudOrder, setFraudOrder] = useState<Order | null>(null);
   const [courierInfoOrder, setCourierInfoOrder] = useState<Order | null>(null);
   const [addingCourierId, setAddingCourierId] = useState<number | null>(null);
+  const [createOrderOpen, setCreateOrderOpen] = useState(false);
+  const [createCustomer, setCreateCustomer] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    district: "",
+    thana: "",
+  });
+  const [createPaymentMethod, setCreatePaymentMethod] = useState("CASHON");
+  const [createDeliveryCharge, setCreateDeliveryCharge] = useState(0);
+  const [createNote, setCreateNote] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const debouncedProductSearch = useDebounce(productSearch, 300);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedVariantKey, setSelectedVariantKey] = useState("");
+  const [createItems, setCreateItems] = useState<CreateOrderItem[]>([]);
+  const [creatingOrder, setCreatingOrder] = useState(false);
   const ordersQuery = useInfiniteQuery({
     queryKey: ["admin-orders", debouncedSearch],
     queryFn: async ({ pageParam = 1 }) => {
@@ -265,6 +321,36 @@ export default function Orders() {
     enabled: !!fraudOrder && !!fraudOrder?.customer?.phone,
   });
 
+  const productsQuery = useQuery({
+    queryKey: ["order-create-products", debouncedProductSearch],
+    queryFn: async () => {
+      const { data } = await api.get("/product/all-products", {
+        params: {
+          page: 1,
+          limit: 20,
+          activeOnly: true,
+          search: debouncedProductSearch,
+        },
+      });
+      return data.data.products as Product[];
+    },
+    enabled: createOrderOpen,
+  });
+
+  const productOptions = productsQuery.data ?? [];
+  const selectedProduct = productOptions.find((product) => String(product.id) === selectedProductId) ?? null;
+  const selectedProductVariants = getActiveProductVariants(selectedProduct);
+  const selectedVariant = selectedProductVariants.find((variant, index) => {
+    const key = `${index}:${variant.size || ""}:${variant.color || ""}`;
+    return key === selectedVariantKey;
+  });
+  const createSubtotal = createItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const createTotal = createSubtotal + Number(createDeliveryCharge || 0);
+
+  useEffect(() => {
+    setSelectedVariantKey("");
+  }, [selectedProductId]);
+
   useEffect(() => {
     const node = loadMoreRef.current;
     if (!node) return;
@@ -340,6 +426,141 @@ export default function Orders() {
       });
     } finally {
       setAddingCourierId(null);
+    }
+  };
+
+  const resetCreateOrder = () => {
+    setCreateCustomer({ name: "", phone: "", address: "", district: "", thana: "" });
+    setCreatePaymentMethod("CASHON");
+    setCreateDeliveryCharge(0);
+    setCreateNote("");
+    setProductSearch("");
+    setSelectedProductId("");
+    setSelectedVariantKey("");
+    setCreateItems([]);
+  };
+
+  const updateCreateCustomer = (key: keyof typeof createCustomer, value: string) => {
+    setCreateCustomer((current) => ({ ...current, [key]: value }));
+  };
+
+  const addSelectedProductToOrder = () => {
+    if (!selectedProduct) {
+      toast({ title: "Select a product first", variant: "destructive" });
+      return;
+    }
+
+    const hasVariants = selectedProductVariants.length > 0;
+    if (hasVariants && !selectedVariant) {
+      toast({ title: "Select a variant first", variant: "destructive" });
+      return;
+    }
+
+    const variantLabel = selectedVariant
+      ? [selectedVariant.size, selectedVariant.color].filter(Boolean).join(" / ")
+      : selectedProduct.sizes?.[0] || "Standard";
+    const selection = splitVariantLabel(variantLabel);
+    const price = Number(selectedVariant?.customerPrice || selectedProduct.price || 0);
+    const stock = selectedVariant ? getVariantStock(selectedVariant) : selectedProduct.stockQty ?? null;
+    const image = getProductImage(selectedProduct, selectedVariant?.image);
+
+    setCreateItems((current) => [
+      ...current,
+      {
+        lineId: `${selectedProduct.id}-${selectedVariantKey || "simple"}-${Date.now()}`,
+        productId: selectedProduct.id,
+        name: selectedProduct.name,
+        image,
+        size: variantLabel,
+        variantSize: selection.size,
+        variantColor: selection.color,
+        quantity: 1,
+        price,
+        stock,
+      },
+    ]);
+  };
+
+  const updateCreateItem = (lineId: string, patch: Partial<CreateOrderItem>) => {
+    setCreateItems((current) =>
+      current.map((item) => (item.lineId === lineId ? { ...item, ...patch } : item)),
+    );
+  };
+
+  const removeCreateItem = (lineId: string) => {
+    setCreateItems((current) => current.filter((item) => item.lineId !== lineId));
+  };
+
+  const handleCreateOrderSubmit = async () => {
+    if (!createCustomer.name.trim() || !createCustomer.phone.trim() || !createCustomer.address.trim()) {
+      toast({
+        title: "Customer information required",
+        description: "Name, phone, and address are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!createCustomer.district.trim() || !createCustomer.thana.trim()) {
+      toast({
+        title: "Delivery area required",
+        description: "District and thana/upazila are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (createItems.length === 0) {
+      toast({
+        title: "Add at least one product",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const invalidItem = createItems.find((item) => item.quantity < 1 || item.price < 0);
+    if (invalidItem) {
+      toast({
+        title: "Invalid item quantity or price",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setCreatingOrder(true);
+      await api.post("/order/add-order", {
+        name: createCustomer.name.trim(),
+        phone: createCustomer.phone.trim(),
+        address: createCustomer.address.trim(),
+        district: createCustomer.district.trim(),
+        thana: createCustomer.thana.trim(),
+        deliveryCharge: Number(createDeliveryCharge || 0),
+        totalPrice: createTotal,
+        paymentMethod: createPaymentMethod,
+        note: createNote.trim() || null,
+        items: createItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          name: item.name,
+          price: item.price,
+          size: item.size,
+          variantSize: item.variantSize,
+          variantColor: item.variantColor,
+          image: item.image,
+        })),
+      });
+
+      toast({ title: "Order created", description: "Custom order has been added." });
+      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      setCreateOrderOpen(false);
+      resetCreateOrder();
+    } catch (error: unknown) {
+      toast({
+        title: "Failed to create order",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingOrder(false);
     }
   };
 
@@ -580,13 +801,21 @@ export default function Orders() {
             className="h-10 rounded-xl pl-9"
           />
         </div>
-        <Button
-          onClick={() => ordersQuery.refetch()}
-          variant="outline"
-          className="h-10 rounded-xl"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" /> Refresh
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            onClick={() => setCreateOrderOpen(true)}
+            className="h-10 rounded-xl"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Create Order
+          </Button>
+          <Button
+            onClick={() => ordersQuery.refetch()}
+            variant="outline"
+            className="h-10 rounded-xl"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+          </Button>
+        </div>
       </Card>
 
       <Card className="overflow-hidden shadow-soft text-nowrap">
@@ -815,6 +1044,311 @@ export default function Orders() {
       </Card>
 
       <div ref={loadMoreRef} className="h-8" />
+
+      {/* Create order modal */}
+      <Dialog open={createOrderOpen} onOpenChange={(open) => {
+        setCreateOrderOpen(open);
+        if (!open && !creatingOrder) resetCreateOrder();
+      }}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto sm:max-w-6xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">Create Custom Order</DialogTitle>
+            <DialogDescription>
+              Search products, choose variants, adjust quantity and price, then create an order manually.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,420px)_1fr]">
+            <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Customer Name</Label>
+                  <Input
+                    value={createCustomer.name}
+                    onChange={(event) => updateCreateCustomer("name", event.target.value)}
+                    placeholder="Customer name"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Phone</Label>
+                  <Input
+                    value={createCustomer.phone}
+                    onChange={(event) => updateCreateCustomer("phone", event.target.value)}
+                    placeholder="01XXXXXXXXX"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Payment</Label>
+                  <Select value={createPaymentMethod} onValueChange={setCreatePaymentMethod}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CASHON">Cash on Delivery</SelectItem>
+                      <SelectItem value="BKASH">Bkash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Address</Label>
+                  <Input
+                    value={createCustomer.address}
+                    onChange={(event) => updateCreateCustomer("address", event.target.value)}
+                    placeholder="Street address"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>District</Label>
+                  <Input
+                    value={createCustomer.district}
+                    onChange={(event) => updateCreateCustomer("district", event.target.value)}
+                    placeholder="District"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Thana / Upazila</Label>
+                  <Input
+                    value={createCustomer.thana}
+                    onChange={(event) => updateCreateCustomer("thana", event.target.value)}
+                    placeholder="Thana / Upazila"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Delivery Charge</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={createDeliveryCharge}
+                    onChange={(event) => setCreateDeliveryCharge(Number(event.target.value))}
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Note</Label>
+                  <Input
+                    value={createNote}
+                    onChange={(event) => setCreateNote(event.target.value)}
+                    placeholder="Optional order note"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border bg-background p-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">{formatBDT(createSubtotal)}</span>
+                </div>
+                <div className="mt-2 flex justify-between">
+                  <span className="text-muted-foreground">Delivery</span>
+                  <span className="font-medium">{formatBDT(Number(createDeliveryCharge || 0))}</span>
+                </div>
+                <div className="mt-2 flex justify-between border-t pt-2 text-base font-semibold">
+                  <span>Total</span>
+                  <span>{formatBDT(createTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-xl border bg-card p-4">
+                <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+                  <div className="space-y-1.5">
+                    <Label>Search Product</Label>
+                    <Input
+                      value={productSearch}
+                      onChange={(event) => setProductSearch(event.target.value)}
+                      placeholder="Search product name..."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Product</Label>
+                    <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={productsQuery.isLoading ? "Loading..." : "Select product"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {productOptions.map((product) => (
+                          <SelectItem key={product.id} value={String(product.id)}>
+                            {product.name} - {formatBDT(product.price)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="opacity-0">Add</Label>
+                    <Button type="button" onClick={addSelectedProductToOrder} className="h-10 w-full">
+                      <Plus className="h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+
+                {selectedProduct && (
+                  <div className="mt-4 grid gap-3 rounded-xl border bg-muted/20 p-3 md:grid-cols-[72px_1fr_220px]">
+                    <div className="h-20 w-16 overflow-hidden rounded-lg border bg-secondary">
+                      {getProductImage(selectedProduct, selectedVariant?.image) ? (
+                        <img
+                          src={getProductImage(selectedProduct, selectedVariant?.image)}
+                          alt={selectedProduct.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium">{selectedProduct.name}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Base stock: {selectedProduct.stockQty ?? 0} · Price: {formatBDT(selectedProduct.price)}
+                      </div>
+                      {selectedVariant && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Variant stock: {getVariantStock(selectedVariant)} · Variant price: {formatBDT(Number(selectedVariant.customerPrice || selectedProduct.price || 0))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Variant</Label>
+                      <Select
+                        value={selectedVariantKey}
+                        onValueChange={setSelectedVariantKey}
+                        disabled={selectedProductVariants.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedProductVariants.length === 0 ? "No variant" : "Select variant"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedProductVariants.map((variant, index) => {
+                            const key = `${index}:${variant.size || ""}:${variant.color || ""}`;
+                            return (
+                              <SelectItem key={key} value={key}>
+                                {[variant.size, variant.color].filter(Boolean).join(" / ") || "Default"} · {formatBDT(Number(variant.customerPrice || selectedProduct.price || 0))} · Stock {getVariantStock(variant)}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border">
+                <Table className="min-w-[760px]">
+                  <TableHeader>
+                    <TableRow className="bg-secondary/40">
+                      <TableHead>Product</TableHead>
+                      <TableHead>Variant</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="text-right">Line Total</TableHead>
+                      <TableHead className="w-12" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {createItems.map((item) => (
+                      <TableRow key={item.lineId}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-10 overflow-hidden rounded-lg border bg-secondary">
+                              {item.image ? (
+                                <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                              ) : null}
+                            </div>
+                            <div>
+                              <div className="font-medium">{item.name}</div>
+                              <div className="text-xs text-muted-foreground">Stock {item.stock ?? "N/A"}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{item.size}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="ml-auto inline-flex items-center rounded-md border">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => updateCreateItem(item.lineId, { quantity: Math.max(1, item.quantity - 1) })}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={(event) => updateCreateItem(item.lineId, { quantity: Math.max(1, Number(event.target.value || 1)) })}
+                              className="h-8 w-16 border-0 text-center shadow-none"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => updateCreateItem(item.lineId, { quantity: item.quantity + 1 })}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={item.price}
+                            onChange={(event) => updateCreateItem(item.lineId, { price: Math.max(0, Number(event.target.value || 0)) })}
+                            className="ml-auto h-9 w-28 text-right"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatBDT(item.price * item.quantity)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeCreateItem(item.lineId)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {createItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                          Search and add products to start a custom order.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCreateOrderOpen(false)}
+              disabled={creatingOrder}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleCreateOrderSubmit} disabled={creatingOrder}>
+              {creatingOrder ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>Create Order · {formatBDT(createTotal)}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* View modal */}
       <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
