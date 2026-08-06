@@ -45,7 +45,7 @@ export default function AdminLogin() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <img
-              src="/fasionfeel_logo.jpg"
+              src="/fasionfeel-logo.jpg"
               alt="Fasion Feel Logo"
               className="h-16 w-auto object-contain rounded-full border border-border"
             />
