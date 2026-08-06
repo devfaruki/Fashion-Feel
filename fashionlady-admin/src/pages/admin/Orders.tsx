@@ -1068,7 +1068,7 @@ export default function Orders() {
         setCreateOrderOpen(open);
         if (!open && !creatingOrder) resetCreateOrder();
       }}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto sm:max-w-6xl">
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-full max-h-[90vh] overflow-y-auto sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Create Custom Order</DialogTitle>
             <DialogDescription>
@@ -1076,7 +1076,7 @@ export default function Orders() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,420px)_1fr]">
+          <div className="grid gap-5 grid-cols-1 lg:grid-cols-[minmax(0,420px)_1fr]">
             <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
@@ -1233,7 +1233,7 @@ export default function Orders() {
                 </div>
 
                 {selectedProduct && (
-                  <div className="mt-4 grid gap-3 rounded-xl border bg-muted/20 p-3 md:grid-cols-[72px_1fr_220px]">
+                  <div className="mt-4 grid gap-3 grid-cols-1 rounded-xl border bg-muted/20 p-3 md:grid-cols-[72px_1fr_220px]">
                     <div className="h-20 w-16 overflow-hidden rounded-lg border bg-secondary">
                       {getProductImage(selectedProduct, selectedVariant?.image) ? (
                         <img
@@ -1281,7 +1281,7 @@ export default function Orders() {
               </div>
 
               <div className="overflow-x-auto rounded-xl border">
-                <Table className="min-w-[760px]">
+                <Table className="min-w-full">
                   <TableHeader>
                     <TableRow className="bg-secondary/40">
                       <TableHead>Product</TableHead>
@@ -1376,7 +1376,7 @@ export default function Orders() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
