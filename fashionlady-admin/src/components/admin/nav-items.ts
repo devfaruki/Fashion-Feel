@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   ShoppingBag,
+  CreditCard,
   Users,
   Package,
   Boxes,
@@ -15,6 +16,7 @@ import {
 export const navItems = [
   { title: "Overview", url: "/", icon: LayoutDashboard, permission: "dashboard" },
   { title: "Orders", url: "/orders", icon: ShoppingBag, permission: "orders" },
+  { title: "Offline Sales", url: "/offline-sales", icon: CreditCard, permission: "offlineSales" },
   { title: "Customers", url: "/customers", icon: Users, permission: "customers" },
   { title: "Products", url: "/products", icon: Package, permission: "products" },
   { title: "Inventory", url: "/inventory", icon: Boxes, permission: "inventory" },

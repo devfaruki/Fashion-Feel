@@ -9,6 +9,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import AdminLogin from "./pages/admin/Login";
 import Overview from "./pages/admin/Overview";
 import Orders from "./pages/admin/Orders";
+import OfflineSales from "./pages/admin/OfflineSales";
 import Customers from "./pages/admin/Customers";
 import Products from "./pages/admin/Products";
 import Inventory from "./pages/admin/Inventory";
@@ -41,6 +42,7 @@ const App = () => (
             >
               <Route path="/" element={<ProtectedRoute permission="dashboard"><Overview /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute permission="orders"><Orders /></ProtectedRoute>} />
+              <Route path="/offline-sales" element={<ProtectedRoute permission="offlineSales"><OfflineSales /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute permission="customers"><Customers /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute permission="products"><Products /></ProtectedRoute>} />
               <Route path="/inventory" element={<ProtectedRoute permission="inventory"><Inventory /></ProtectedRoute>} />

@@ -311,6 +311,102 @@ async function releaseStock(tx, orderItems) {
   }
 }
 
+async function createOrderFromBody(body) {
+  if (!body || Object.keys(body).length === 0) {
+    const error = new Error("ORDER_DATA_REQUIRED");
+    throw error;
+  }
+
+  if (!body.name || String(body.name).trim().length < 2) {
+    const error = new Error("CUSTOMER_NAME_REQUIRED");
+    throw error;
+  }
+
+  if (!body.phone) {
+    const error = new Error("CUSTOMER_PHONE_REQUIRED");
+    throw error;
+  }
+
+  if (!body.address || String(body.address).trim().length < 3) {
+    const error = new Error("CUSTOMER_ADDRESS_REQUIRED");
+    throw error;
+  }
+
+  const saleSource = normalizeText(body.saleSource || "ONLINE").toUpperCase() || "ONLINE";
+  const isOfflineSale = saleSource === "OFFLINE";
+
+  if (!isOfflineSale) {
+    if (!body.district || normalizeText(body.district).length < 2) {
+      const error = new Error("CUSTOMER_DISTRICT_REQUIRED");
+      throw error;
+    }
+
+    if (!body.thana || normalizeText(body.thana).length < 2) {
+      const error = new Error("CUSTOMER_THANA_REQUIRED");
+      throw error;
+    }
+  }
+
+  if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
+    const error = new Error("ORDER_ITEMS_REQUIRED");
+    throw error;
+  }
+
+  const orderItems = extractOrderItems(body.items);
+  if (orderItems.length === 0) {
+    const error = new Error("INVALID_ORDER_ITEMS");
+    throw error;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await ensureStockAvailability(tx, orderItems);
+  });
+
+  const result = await prisma.$transaction(async (tx) => {
+    const normalizedPhone = normalizePhone(body.phone);
+    const normalizedDistrict = normalizeText(body.district);
+    const normalizedThana = normalizeText(body.thana);
+    const customer = await tx.customer.upsert({
+      where: { phone: normalizedPhone },
+      update: {
+        name: normalizeText(body.name),
+        address: normalizeText(body.address),
+        district: isOfflineSale ? null : normalizedDistrict,
+        thana: isOfflineSale ? null : normalizedThana,
+      },
+      create: {
+        name: normalizeText(body.name),
+        phone: normalizedPhone,
+        address: normalizeText(body.address),
+        district: isOfflineSale ? null : normalizedDistrict,
+        thana: isOfflineSale ? null : normalizedThana,
+      },
+    });
+
+    const order = await tx.order.create({
+      data: {
+        customerId: customer.id,
+        totalPrice: Number(body.totalPrice) || 0,
+        deliveryCharge: Number(body.deliveryCharge) || 0,
+        district: isOfflineSale ? null : normalizedDistrict,
+        thana: isOfflineSale ? null : normalizedThana,
+        saleSource,
+        orderStatus: isOfflineSale ? "PAID" : body.orderStatus || "PENDING",
+        paymentMethod: body.paymentMethod || "CASHON",
+        items: body.items,
+        note: body.note || null,
+      },
+      include: {
+        customer: true,
+      },
+    });
+
+    return order;
+  });
+
+  return result;
+}
+
 /**
  * Generate a random 4-digit order number between 1000-9999
  */
@@ -411,45 +507,7 @@ router.post("/add-order", async (req, res) => {
     }
 
     // Create or update customer + order in a single transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const normalizedPhone = normalizePhone(body.phone);
-      // 1. Create or update the customer based on phone number
-      const customer = await tx.customer.upsert({
-        where: { phone: normalizedPhone },
-        update: {
-          name: normalizeText(body.name),
-          address: normalizeText(body.address),
-          district: normalizeText(body.district),
-          thana: normalizeText(body.thana),
-        },
-        create: {
-          name: normalizeText(body.name),
-          phone: normalizedPhone,
-          address: normalizeText(body.address),
-          district: normalizeText(body.district),
-          thana: normalizeText(body.thana),
-        },
-      });
-
-      // 2. Create the order linked to the customer
-      const order = await tx.order.create({
-        data: {
-          customerId: customer.id,
-          totalPrice: Number(body.totalPrice) || 0,
-          deliveryCharge: Number(body.deliveryCharge) || 0,
-          district: normalizeText(body.district),
-          thana: normalizeText(body.thana),
-          paymentMethod: body.paymentMethod || "CASHON",
-          items: body.items,
-          note: body.note || null,
-        },
-        include: {
-          customer: true,
-        },
-      });
-
-      return order;
-    });
+    const result = await createOrderFromBody(body);
 
     // Generate a 4-digit display order number
     const orderDisplayId = String(result.id).padStart(4, "0").slice(-4);
@@ -462,6 +520,28 @@ router.post("/add-order", async (req, res) => {
   } catch (error) {
     console.error("Error creating order:", error);
 
+    if (error.message === "CUSTOMER_NAME_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer name is required" });
+    }
+    if (error.message === "CUSTOMER_PHONE_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer phone is required" });
+    }
+    if (error.message === "CUSTOMER_ADDRESS_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer address is required" });
+    }
+    if (error.message === "CUSTOMER_DISTRICT_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer district is required" });
+    }
+    if (error.message === "CUSTOMER_THANA_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer thana/upazila is required" });
+    }
+    if (error.message === "ORDER_ITEMS_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Order must contain at least one item" });
+    }
+    if (error.message === "INVALID_ORDER_ITEMS") {
+      return res.status(400).json({ status: "fail", message: "Order items are invalid" });
+    }
+
     if (error.code === "P2003") {
       return res.status(404).json({
         status: "fail",
@@ -472,6 +552,58 @@ router.post("/add-order", async (req, res) => {
     res.status(500).json({
       status: "fail",
       message: "Failed to create order. Please try again later.",
+    });
+  }
+});
+
+router.post("/add-offline-sale", async (req, res) => {
+  try {
+    const body = req.body;
+    body.saleSource = "OFFLINE";
+    body.orderStatus = "PAID";
+    const result = await createOrderFromBody(body);
+    const orderDisplayId = String(result.id).padStart(4, "0").slice(-4);
+
+    res.json({
+      status: "success",
+      data: result,
+      orderId: orderDisplayId,
+    });
+  } catch (error) {
+    console.error("Error creating offline sale:", error);
+
+    if (error.message === "CUSTOMER_NAME_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer name is required" });
+    }
+    if (error.message === "CUSTOMER_PHONE_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer phone is required" });
+    }
+    if (error.message === "CUSTOMER_ADDRESS_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer address is required" });
+    }
+    if (error.message === "CUSTOMER_DISTRICT_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer district is required" });
+    }
+    if (error.message === "CUSTOMER_THANA_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Customer thana/upazila is required" });
+    }
+    if (error.message === "ORDER_ITEMS_REQUIRED") {
+      return res.status(400).json({ status: "fail", message: "Order must contain at least one item" });
+    }
+    if (error.message === "INVALID_ORDER_ITEMS") {
+      return res.status(400).json({ status: "fail", message: "Order items are invalid" });
+    }
+
+    if (error.code === "P2003") {
+      return res.status(404).json({
+        status: "fail",
+        message: "Customer not found. Please create the customer first.",
+      });
+    }
+
+    res.status(500).json({
+      status: "fail",
+      message: "Failed to create offline sale. Please try again later.",
     });
   }
 });
@@ -519,11 +651,11 @@ router.get("/all-order", async (req, res) => {
       });
 
       // Enums can't be filtered with `contains` in Prisma. Check for exact enum values (case-insensitive)
-      const orderStatusEnums = ["PENDING", "SHIPPED", "DELIVERED", "CANCELLED"];
+      const orderStatusEnums = ["PENDING", "SHIPPED", "DELIVERED", "CANCELLED", "PAID"];
       if (orderStatusEnums.includes(searchUpper)) {
         orFilters.push({ orderStatus: searchUpper });
       }
-      const paymentEnums = ["CASHON", "BKASH"];
+      const paymentEnums = ["CASHON", "BKASH", "NAGAD", "ROCKET", "CARD"];
       if (paymentEnums.includes(searchUpper)) {
         orFilters.push({ paymentMethod: searchUpper });
       }
@@ -542,6 +674,16 @@ router.get("/all-order", async (req, res) => {
       }
 
       where = { OR: orFilters };
+    }
+
+    if (req.query.saleSource) {
+      const saleSource = String(req.query.saleSource).trim().toUpperCase();
+      if (saleSource) {
+        where = {
+          ...where,
+          saleSource,
+        };
+      }
     }
 
     // Fetch orders with pagination and optional search filter

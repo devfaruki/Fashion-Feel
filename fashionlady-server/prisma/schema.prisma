@@ -159,6 +159,7 @@ model Order {
   deliveryCharge Int
   district       String?
   thana          String?
+  saleSource     String?       @default("ONLINE")
   orderStatus    OrderStatus   @default(PENDING)
   orderDate      DateTime?     @default(now())
   paymentMethod  PaymentMethod @default(CASHON)
@@ -189,11 +190,15 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+  PAID
 }
 
 enum PaymentMethod {
   CASHON
   BKASH
+  NAGAD
+  ROCKET
+  CARD
 }
 
 enum ReviewStatus {

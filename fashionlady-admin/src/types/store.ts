@@ -90,8 +90,9 @@ export type Order = {
   deliveryCharge: number;
   district?: string | null;
   thana?: string | null;
-  orderStatus: "PENDING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
-  paymentMethod: "CASHON" | "BKASH";
+  saleSource?: string | null;
+  orderStatus: "PENDING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "PAID";
+  paymentMethod: "CASHON" | "BKASH" | "NAGAD" | "ROCKET" | "CARD";
   items: OrderItem[];
   note?: string | null;
   orderDate: string;

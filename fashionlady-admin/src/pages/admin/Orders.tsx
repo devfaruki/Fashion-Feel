@@ -230,7 +230,12 @@ export default function Orders() {
     queryKey: ["admin-orders", debouncedSearch],
     queryFn: async ({ pageParam = 1 }) => {
       const { data } = await api.get("/order/all-order", {
-        params: { page: pageParam, limit: 10, search: debouncedSearch },
+        params: {
+          page: pageParam,
+          limit: 10,
+          search: debouncedSearch,
+          saleSource: "ONLINE",
+        },
       });
       return data.data as {
         orders: Order[];
