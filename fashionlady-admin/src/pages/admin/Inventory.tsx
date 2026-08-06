@@ -151,7 +151,7 @@ export default function Inventory() {
     },
   });
 
-  const items = inventoryQuery.data?.items ?? [];
+  const items = useMemo(() => inventoryQuery.data?.items ?? [], [inventoryQuery.data?.items]);
   const groups = useMemo(() => groupInventory(items), [items]);
   const totals = useMemo(
     () => ({

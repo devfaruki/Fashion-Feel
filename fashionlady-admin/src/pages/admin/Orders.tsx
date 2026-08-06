@@ -292,8 +292,12 @@ export default function Orders() {
         try {
           const response = await api.get(path);
           return response.data as CourierStatusResponse;
-        } catch (error: any) {
-          if (lookup.type === "cid" && error?.response?.status === 404) {
+        } catch (error: unknown) {
+          const status = typeof error === "object" && error !== null && "response" in error
+            ? (error as { response?: { status?: number } }).response?.status
+            : undefined;
+
+          if (lookup.type === "cid" && status === 404) {
             const fallbackResponse = await api.get(`/courier/status/${encodeURIComponent(lookup.key)}`);
             return fallbackResponse.data as CourierStatusResponse;
           }
