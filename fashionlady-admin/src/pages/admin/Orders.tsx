@@ -867,14 +867,14 @@ export default function Orders() {
           <div class="page${compactInvoice ? " compact" : ""}">
             <header class="brand">
               <div class="brand-logo">
-                <img src="${invoiceLogo}" alt="Fashion Feel Logo" onerror="this.src='${invoiceLogo}'" />
+                <img src="${invoiceLogo}" alt="Fasion Feet Logo" onerror="this.src='${invoiceLogo}'" />
               </div>
               <div>
-                <p class="brand-title">Fashion Feel</p>
+                <p class="brand-title">Fasion Feet</p>
                 <p class="brand-tagline">Premium fashion for the modern lifestyle</p>
               </div>
               <div class="brand-info">
-                <div><strong>Fashion Feel</strong></div>
+                <div><strong>Fasion Feet</strong></div>
                 <div>123 Fashion Ave, Dhaka, Bangladesh</div>
                 <div>hello@fashionfeel.com</div>
                 <div>+880 1234 567890</div>
@@ -935,7 +935,7 @@ export default function Orders() {
             </div>
 
             <footer class="footer">
-              <div>Thank you for shopping with Fashion Feel.</div>
+              <div>Thank you for shopping with Fasion Feet.</div>
               <div>Please retain this invoice for your records.</div>
             </footer>
           </div>

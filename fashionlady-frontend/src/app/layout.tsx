@@ -7,9 +7,9 @@ import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import MicrosoftClarity from "@/components/analytics/MicrosoftClarity";
 
 export const metadata: Metadata = {
-  title: "Fasion Feel | Elegant Women's Fashion",
+  title: "Fasion Feet | Elegant Women's Fashion",
   description:
-    "Discover the latest trends in women's fashion with Fasion Feel. Shop our curated collection of elegant dresses, tops, and more.",
+    "Discover the latest trends in women's fashion with Fasion Feet. Shop our curated collection of elegant dresses, tops, and more.",
   icons: {
     icon: "/favicon.png",
   },

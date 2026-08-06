@@ -18,7 +18,7 @@ type WishlistContextValue = {
 const WishlistContext = createContext<WishlistContextValue | undefined>(
   undefined,
 );
-const STORAGE_KEY = "Fasion Feel.wishlist.v1";
+const STORAGE_KEY = "Fasion Feet.wishlist.v1";
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const [ids, setIds] = useState<number[]>([]);

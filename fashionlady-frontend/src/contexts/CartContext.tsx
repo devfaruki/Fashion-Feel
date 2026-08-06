@@ -35,7 +35,7 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
-const STORAGE_KEY = "Fasion Feel.cart.v1";
+const STORAGE_KEY = "Fasion Feet.cart.v1";
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);

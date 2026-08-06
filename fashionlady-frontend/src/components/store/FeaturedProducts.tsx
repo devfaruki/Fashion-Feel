@@ -49,7 +49,7 @@ export const FeaturedProducts = () => {
               Hand-picked
             </p>
             <h2 className="font-serif text-4xl md:text-5xl font-medium text-primary">
-              Featured at Fasion Feel
+              Featured at Fasion Feet
             </h2>
           </div>
 
@@ -58,11 +58,10 @@ export const FeaturedProducts = () => {
               <button
                 key={t}
                 onClick={() => setActive(t)}
-                className={`px-4 py-2 text-sm font-medium transition-all relative ${
-                  active === t
+                className={`px-4 py-2 text-sm font-medium transition-all relative ${active === t
                     ? "text-primary"
                     : "text-muted-foreground hover:text-primary"
-                }`}
+                  }`}
               >
                 {t}
                 {active === t && (

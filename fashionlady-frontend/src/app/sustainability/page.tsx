@@ -43,7 +43,7 @@ export default function Sustainability() {
           <div>
             <h2 className="font-serif text-2xl text-foreground mb-2">What we're working on next</h2>
             <ul className="list-disc pl-5 space-y-2 text-muted-foreground leading-relaxed">
-              <li>A take-back programme for pre-loved Fasion Feel pieces.</li>
+              <li>A take-back programme for pre-loved Fasion Feet pieces.</li>
               <li>Carbon-neutral domestic shipping by 2026.</li>
               <li>A repair service for embroidery and beadwork.</li>
             </ul>

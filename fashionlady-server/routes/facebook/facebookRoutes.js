@@ -61,8 +61,8 @@ function normalizeBaseUrl(value, fallback) {
 function getSiteBaseUrl(req) {
   return normalizeBaseUrl(
     process.env.FRONTEND_BASE_URL ||
-      process.env.PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL,
     `${req.protocol}://${req.get("host")}`,
   );
 }
@@ -70,8 +70,8 @@ function getSiteBaseUrl(req) {
 function getAssetBaseUrl(req) {
   return normalizeBaseUrl(
     process.env.PUBLIC_ASSET_BASE_URL ||
-      process.env.SERVER_BASE_URL ||
-      process.env.API_BASE_URL,
+    process.env.SERVER_BASE_URL ||
+    process.env.API_BASE_URL,
     `${req.protocol}://${req.get("host")}`,
   );
 }
@@ -162,7 +162,7 @@ router.get("/catalog.csv", async (req, res) => {
         formatCatalogPrice(hasSale ? product.oldPrice : product.price),
         `${siteBaseUrl}/product/${product.id}`,
         resolveAbsoluteUrl(assetBaseUrl, getPrimaryImage(product)),
-        product.brand?.name || "Fasion Feel",
+        product.brand?.name || "Fasion Feet",
         META_CATALOG_CATEGORY,
         META_CATALOG_CATEGORY,
         hasSale ? formatCatalogPrice(product.price) : "",

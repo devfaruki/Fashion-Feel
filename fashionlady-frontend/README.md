@@ -1,6 +1,6 @@
-# Fasion Feel Frontend
+# Fasion Feet Frontend
 
-This app contains the browser-side tracking stack used by Fasion Feel.
+This app contains the browser-side tracking stack used by Fasion Feet.
 
 ## Tracking Included
 

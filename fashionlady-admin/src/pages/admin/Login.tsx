@@ -46,12 +46,12 @@ export default function AdminLogin() {
           <div className="flex items-center justify-center mb-4">
             <img
               src="/fasionfeel-logo.jpg"
-              alt="Fasion Feel Logo"
+              alt="Fasion Feet Logo"
               className="h-16 w-auto object-contain rounded-full border border-border"
             />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Fasion Feel
+            Fasion Feet
           </h1>
           <p className="text-muted-foreground mt-1">Admin Dashboard</p>
         </div>

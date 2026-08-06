@@ -1,6 +1,6 @@
-# Fasion Feel Server
+# Fasion Feet Server
 
-This app contains the backend-side tracking and Meta Conversions API integration used by Fasion Feel.
+This app contains the backend-side tracking and Meta Conversions API integration used by Fasion Feet.
 
 ## Tracking Included
 

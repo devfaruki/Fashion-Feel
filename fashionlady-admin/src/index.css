@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fasion Feel design system — deep yellow couture theme. All colors HSL. */
+/* Fasion Feet design system — deep yellow couture theme. All colors HSL. */
 
 @layer base {
   :root {
@@ -116,7 +116,11 @@
     font-feature-settings: "ss01", "cv01";
   }
 
-  h1, h2, h3, h4, .font-display {
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
     font-family: 'Cormorant Garamond', serif;
     @apply tracking-tight;
   }

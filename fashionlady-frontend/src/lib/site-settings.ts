@@ -29,7 +29,7 @@ export interface SiteSettings {
 }
 
 export const defaultSiteSettings: SiteSettings = {
-  brandName: "Fasion Feel",
+  brandName: "Fasion Feet",
   headerLogo: "/assets/logo.png",
   footerLogo: "/assets/logo.png",
   favicon: "/favicon.png",
@@ -41,7 +41,7 @@ export const defaultSiteSettings: SiteSettings = {
   aboutIntro:
     "A fashion destination where you can find original Pakistani & Indian collection to keep your style unique.",
   aboutStory:
-    "Fasion Feel began as a small studio in Dhanmondi with one belief - that every woman deserves authentic, beautifully crafted clothing without having to fly across borders to find it.",
+    "Fasion Feet began as a small studio in Dhanmondi with one belief - that every woman deserves authentic, beautifully crafted clothing without having to fly across borders to find it.",
   facebookUrl: "https://www.facebook.com/fasionfeel.com.bd",
   instagramUrl: "https://www.instagram.com/fasionfeel",
   gtmId: "",

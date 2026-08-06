@@ -36,7 +36,7 @@ export function AdminSidebar() {
   });
   const isActive = (path: string) =>
     path === "/" ? pathname === "/" : pathname.startsWith(path);
-  const brandName = settings?.brandName || "Fasion Feel";
+  const brandName = settings?.brandName || "Fasion Feet";
   const logo = settings?.headerLogo || "/fasionfeel_logo.jpg";
 
   return (
@@ -44,9 +44,9 @@ export function AdminSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-3">
         <div className={`${collapsed ? "justify-center" : "justify-start"} flex items-center gap-2`}>
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg">
-            <img 
+            <img
               src={resolveAssetUrl(logo)}
-              alt={`${brandName} Logo`} 
+              alt={`${brandName} Logo`}
               className="h-full w-full rounded-lg object-cover shadow-glow"
             />
           </div>
@@ -83,7 +83,7 @@ export function AdminSidebar() {
                       className={cn(
                         "mx-1 h-11 rounded-md px-3 transition-smooth",
                         active &&
-                          "bg-gradient-primary !text-primary-foreground shadow-soft hover:bg-gradient-primary hover:text-primary-foreground"
+                        "bg-gradient-primary !text-primary-foreground shadow-soft hover:bg-gradient-primary hover:text-primary-foreground"
                       )}
                     >
                       <NavLink to={item.url} end={item.url === "/"}>

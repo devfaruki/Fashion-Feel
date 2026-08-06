@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fasion Feel design system — deep yellow + warm cream + charcoal */
+/* Fasion Feet design system — deep yellow + warm cream + charcoal */
 @layer base {
   :root {
     --font-sans: Arial, Helvetica, sans-serif;
