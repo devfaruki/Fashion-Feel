@@ -74,7 +74,7 @@ export const Brands = () => {
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/20 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-6 text-primary-foreground">
+                  <div className="absolute inset-x-0 bottom-0 p-6 text-white">
                     <h3 className="font-serif text-2xl md:text-3xl font-medium mb-1">
                       {brand.name}
                     </h3>

@@ -18,7 +18,6 @@ import {
     Plus,
     ShoppingBag,
     Truck,
-    RotateCcw,
     ShieldCheck,
     ChevronRight,
     ChevronLeft,
@@ -449,7 +448,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                         <div className="order-1 lg:order-2 flex-1">
                             <div className="relative mx-auto max-w-[680px] bg-secondary aspect-[4/5] overflow-hidden">
                                 {(discountPercent > 0 || product.badge) && (
-                                    <span className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground text-[10px] font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full">
+                                    <span className="absolute top-4 left-4 z-10 bg-primary text-white text-[10px] font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full">
                                         {discountPercent > 0 ? `${discountPercent}% Off` : product.badge}
                                     </span>
                                 )}
@@ -502,7 +501,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                                     </span>
                                 )}
                                 {discountPercent > 0 && (
-                                    <span className="bg-primary px-2 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground">
+                                    <span className="bg-primary px-2 py-1 text-xs font-semibold uppercase tracking-wider text-white">
                                         {discountPercent}% Off
                                     </span>
                                 )}
@@ -514,7 +513,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                                 <p className="text-xs uppercase tracking-wider font-medium">Size</p>
                             </div>
                             {sizeInfo.isUnstitched ? (
-                                <div className="inline-flex h-11 items-center border border-primary bg-primary px-4 text-sm font-medium text-primary-foreground">
+                                <div className="inline-flex h-11 items-center border border-primary bg-primary px-4 text-sm font-medium text-white">
                                     {UNSTITCHED_SIZE}
                                 </div>
                             ) : (
@@ -527,7 +526,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                                                 className={cn(
                                                     "h-11 min-w-[44px] px-3 border text-sm font-medium transition-all",
                                                     size === s
-                                                        ? "border-primary bg-primary text-primary-foreground"
+                                                        ? "border-primary bg-primary text-white"
                                                         : "border-border hover:border-primary",
                                                 )}
                                             >
@@ -550,7 +549,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                                             className={cn(
                                                 "h-10 min-w-[72px] px-3 border text-sm font-medium transition-all",
                                                 color === item
-                                                    ? "border-primary bg-primary text-primary-foreground"
+                                                    ? "border-primary bg-primary text-white"
                                                     : "border-border hover:border-primary",
                                             )}
                                         >
@@ -591,7 +590,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                                 <Button
                                     size="lg"
                                     disabled={isOutOfStock}
-                                    className="flex-1 min-w-0 rounded-none h-12 bg-primary hover:bg-primary-glow"
+                                    className="text-white flex-1 min-w-0 rounded-none h-12 bg-primary hover:bg-primary-glow"
                                     onClick={() => {
                                         if (!size) return;
                                         addItem({ ...product, price: displayPrice, images: displayGallery }, color ? `${size} / ${color}` : size, qty);
@@ -617,7 +616,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                             <Button
                                 size="lg"
                                 disabled={isOutOfStock}
-                                className="w-full rounded-none h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold uppercase tracking-wider"
+                                className="w-full rounded-none h-12 bg-accent hover:bg-accent/90 text-white
+                                font-semibold uppercase tracking-wider"
                                 onClick={handleCheckout}
                             >
                                 {isOutOfStock ? "Unavailable" : "Checkout Now"}
@@ -786,7 +786,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                             <Button
                                 type="button"
                                 variant={reviewFormOpen ? "secondary" : "default"}
-                                className="h-10 rounded-none"
+                                className="h-10 rounded-none text-white"
                                 onClick={() => setReviewFormOpen((open) => !open)}
                             >
                                 {reviewFormOpen ? "Hide Review Form" : "Write a Review"}
@@ -877,7 +877,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
                             <Button
                                 type="submit"
-                                className="h-11 rounded-none"
+                                className="h-11 rounded-none text-white"
                                 disabled={submitReviewMutation.isPending}
                             >
                                 {submitReviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

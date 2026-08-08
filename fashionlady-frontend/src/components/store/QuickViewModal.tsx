@@ -115,13 +115,13 @@ export const QuickViewModal = () => {
                 <div className="grid md:grid-cols-2 max-h-[90vh] overflow-y-auto">
                     <div className="relative flex-shrink-0 flex flex-col self-start">
                         {(discountPercent > 0 || product.badge) && !isOutOfStock && (
-                            <span className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 bg-accent text-accent-foreground text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1">
+                            <span className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 bg-accent text-white text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1">
                                 {discountPercent > 0 ? `${discountPercent}% Off` : product.badge}
                             </span>
                         )}
                         {isOutOfStock && (
                             <div className="absolute inset-0 z-20 bg-background/40 backdrop-blur-[2px] flex items-center justify-center">
-                                <span className="bg-primary text-primary-foreground text-xs font-bold tracking-[0.2em] uppercase px-4 py-2 shadow-xl border border-primary-foreground/20">
+                                <span className="bg-primary text-white text-xs font-bold tracking-[0.2em] uppercase px-4 py-2 shadow-xl border border-primary-foreground/20">
                                     Stock Out
                                 </span>
                             </div>
@@ -176,7 +176,7 @@ export const QuickViewModal = () => {
                                     </span>
                                 )}
                                 {discountPercent > 0 && (
-                                    <span className="bg-primary px-2 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground">
+                                    <span className="bg-primary px-2 py-1 text-xs font-semibold uppercase tracking-wider text-white">
                                         {discountPercent}% Off
                                     </span>
                                 )}
@@ -193,10 +193,10 @@ export const QuickViewModal = () => {
                         {/* Stitch and size selector */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <p className="text-xs uppercase tracking-wider text-foreground font-medium">Size</p>
+                                <p className="text-xs uppercase tracking-wider text- font-medium">Size</p>
                             </div>
                             {sizeInfo.isUnstitched ? (
-                                <div className="inline-flex h-11 items-center border border-primary bg-primary px-4 text-sm font-medium text-primary-foreground">
+                                <div className="inline-flex h-11 items-center border border-primary bg-primary px-4 text-sm font-medium text-white">
                                     {UNSTITCHED_SIZE}
                                 </div>
                             ) : (
@@ -210,7 +210,7 @@ export const QuickViewModal = () => {
                                                 className={cn(
                                                     "h-11 min-w-[44px] px-3 border text-sm font-medium transition-all",
                                                     size === s
-                                                        ? "border-primary bg-primary text-primary-foreground"
+                                                        ? "border-primary bg-primary text-white"
                                                         : "border-border hover:border-primary",
                                                     isOutOfStock && "opacity-50 cursor-not-allowed",
                                                 )}
@@ -235,7 +235,7 @@ export const QuickViewModal = () => {
                                             className={cn(
                                                 "h-10 min-w-[72px] px-3 border text-sm font-medium transition-all",
                                                 color === item
-                                                    ? "border-primary bg-primary text-primary-foreground"
+                                                    ? "border-primary bg-primary text-white"
                                                     : "border-border hover:border-primary",
                                                 isOutOfStock && "opacity-50 cursor-not-allowed",
                                             )}
@@ -277,7 +277,7 @@ export const QuickViewModal = () => {
                         <div className="flex flex-row gap-3 pt-2">
                             <Button
                                 size="lg"
-                                className="flex-1 min-w-0 rounded-none h-12 bg-primary hover:bg-primary-glow"
+                                className="text-white flex-1 min-w-0 rounded-none h-12 bg-primary hover:bg-primary-glow"
                                 disabled={!size || isOutOfStock}
                                 onClick={() => {
                                     if (!size) return;
@@ -305,7 +305,7 @@ export const QuickViewModal = () => {
 
                         <Button
                             size="lg"
-                            className="w-full rounded-none h-12 bg-accent hover:bg-accent/90"
+                            className="text-white w-full rounded-none h-12 bg-accent hover:bg-accent/90"
                             disabled={!size || isOutOfStock}
                             onClick={() => {
                                 if (!product || !size) return;

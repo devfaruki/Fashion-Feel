@@ -40,7 +40,7 @@ export const Footer = () => {
             <Button
               type="submit"
               size="lg"
-              className="rounded-none h-14 px-8 bg-[#ff0000] text-white hover:bg-[#cc0000]"
+              className="rounded-none h-14 px-8 bg-[#ff9a3bde] text-white hover:bg-[#b97207]"
             >
               <Mail className="h-4 w-4" /> Subscribe
             </Button>

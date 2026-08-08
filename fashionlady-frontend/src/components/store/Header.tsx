@@ -110,7 +110,7 @@ export const Header = ({ transparent = false }: HeaderProps) => {
               : "bg-background text-foreground",
         )}
       >
-        <div className="container flex h-20 items-center justify-between gap-6">
+        <div className={`${scrolled ? "text-black" : "text-white"}  container flex h-20 items-center justify-between gap-6`}>
           <button
             className="lg:hidden"
             onClick={() => setMobileOpen(true)}

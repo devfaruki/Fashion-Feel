@@ -76,18 +76,18 @@ export const ProductCard = ({ product, index = 0 }: { product: Product; index?: 
         >
             <div className="relative overflow-hidden bg-secondary aspect-[3/4] mb-4">
                 {discountPercent > 0 && !isOutOfStock ? (
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-accent text-accent-foreground text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1">
+                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-accent text-white text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1">
                         {discountPercent}%
                     </span>
                 ) : product.badge && !isOutOfStock ? (
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-accent text-accent-foreground text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1">
+                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-accent text-white text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1">
                         {product.badge}
                     </span>
                 ) : null}
 
                 {isOutOfStock && (
                     <div className="absolute inset-0 z-20 bg-background/5 backdrop-blur-[1px] flex items-center justify-center p-4">
-                        <span className="bg-primary text-primary-foreground text-xs sm:text-sm font-bold tracking-[0.2em] uppercase px-2 py-1 sm:px-4 sm:py-2 shadow-xl border border-primary-foreground/20">
+                        <span className="bg-primary text-white text-xs sm:text-sm font-bold tracking-[0.2em] uppercase px-2 py-1 sm:px-4 sm:py-2 shadow-xl border border-primary-foreground/20">
                             Stock Out
                         </span>
                     </div>
@@ -134,7 +134,7 @@ export const ProductCard = ({ product, index = 0 }: { product: Product; index?: 
                         <Button
                             size="sm"
                             disabled={isOutOfStock}
-                            className="flex-1 rounded-none h-8 sm:h-10 bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground"
+                            className="flex-1 rounded-none h-8 sm:h-10 bg-primary text-white hover:bg-accent hover:text-white"
                             onClick={() => {
                                 addItem(cartProduct, defaultVariantLabel, 1);
                             }}

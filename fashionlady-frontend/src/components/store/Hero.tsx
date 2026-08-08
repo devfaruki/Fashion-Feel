@@ -92,7 +92,7 @@ export const Hero = ({ slides }: HeroProps) => {
               <Button
                 asChild
                 size="lg"
-                className="group rounded-none h-12 px-10 bg-primary-glow hover:bg-accent hover:text-accent-foreground text-primary-foreground border border-primary-foreground/20 transition-all duration-300"
+                className="group rounded-none h-12 px-10 bg-primary-glow hover:bg-accent hover:text-accent-foreground text-white border border-primary-foreground/20 transition-all duration-300"
               >
                 <Link href={slides[current].buttonUrl || "/shop"}>
                   {slides[current].buttonText}
